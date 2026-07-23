@@ -1,0 +1,13 @@
+E:\WorkSpace\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\bin\Debug\net10.0\TrainSwarm.Coordinator.Domain.deps.json
+E:\WorkSpace\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\bin\Debug\net10.0\TrainSwarm.Coordinator.Domain.dll
+E:\WorkSpace\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\bin\Debug\net10.0\TrainSwarm.Coordinator.Domain.pdb
+E:\WorkSpace\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\TrainSwarm.Coordinator.Domain.csproj.AssemblyReference.cache
+E:\WorkSpace\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\TrainSwarm.Coordinator.Domain.GeneratedMSBuildEditorConfig.editorconfig
+E:\WorkSpace\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\TrainSwarm.Coordinator.Domain.AssemblyInfoInputs.cache
+E:\WorkSpace\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\TrainSwarm.Coordinator.Domain.AssemblyInfo.cs
+E:\WorkSpace\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\TrainSwarm.Coordinator.Domain.csproj.CoreCompileInputs.cache
+E:\WorkSpace\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\TrainSwarm.Coordinator.Domain.sourcelink.json
+E:\WorkSpace\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\TrainSwarm.Coordinator.Domain.dll
+E:\WorkSpace\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\refint\TrainSwarm.Coordinator.Domain.dll
+E:\WorkSpace\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\TrainSwarm.Coordinator.Domain.pdb
+E:\WorkSpace\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\ref\TrainSwarm.Coordinator.Domain.dll
