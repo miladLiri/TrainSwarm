@@ -3181,19 +3181,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Milad\\.nuget\\packages\\": {}
+    "C:\\Users\\azure-dev\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "E:\\WorkSpace\\TrainSwarm\\src\\Coordinator\\TrainSwarm.Coordinator.Api\\TrainSwarm.Coordinator.Api.csproj",
+      "projectUniqueName": "C:\\Users\\azure-dev\\dev\\TrainSwarm\\src\\Coordinator\\TrainSwarm.Coordinator.Api\\TrainSwarm.Coordinator.Api.csproj",
       "projectName": "TrainSwarm.Coordinator.Api",
-      "projectPath": "E:\\WorkSpace\\TrainSwarm\\src\\Coordinator\\TrainSwarm.Coordinator.Api\\TrainSwarm.Coordinator.Api.csproj",
-      "packagesPath": "C:\\Users\\Milad\\.nuget\\packages\\",
-      "outputPath": "E:\\WorkSpace\\TrainSwarm\\src\\Coordinator\\TrainSwarm.Coordinator.Api\\obj\\",
+      "projectPath": "C:\\Users\\azure-dev\\dev\\TrainSwarm\\src\\Coordinator\\TrainSwarm.Coordinator.Api\\TrainSwarm.Coordinator.Api.csproj",
+      "packagesPath": "C:\\Users\\azure-dev\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\azure-dev\\dev\\TrainSwarm\\src\\Coordinator\\TrainSwarm.Coordinator.Api\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\Milad\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\azure-dev\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net10.0"
@@ -3206,8 +3206,8 @@
           "framework": "net10.0",
           "targetAlias": "net10.0",
           "projectReferences": {
-            "E:\\WorkSpace\\TrainSwarm\\src\\Coordinator\\TrainSwarm.Coordinator.Domain\\TrainSwarm.Coordinator.Domain.csproj": {
-              "projectPath": "E:\\WorkSpace\\TrainSwarm\\src\\Coordinator\\TrainSwarm.Coordinator.Domain\\TrainSwarm.Coordinator.Domain.csproj"
+            "C:\\Users\\azure-dev\\dev\\TrainSwarm\\src\\Coordinator\\TrainSwarm.Coordinator.Domain\\TrainSwarm.Coordinator.Domain.csproj": {
+              "projectPath": "C:\\Users\\azure-dev\\dev\\TrainSwarm\\src\\Coordinator\\TrainSwarm.Coordinator.Domain\\TrainSwarm.Coordinator.Domain.csproj"
             }
           }
         }
@@ -3222,7 +3222,7 @@
         "auditLevel": "low",
         "auditMode": "all"
       },
-      "SdkAnalysisLevel": "10.0.300"
+      "SdkAnalysisLevel": "10.0.400"
     },
     "frameworks": {
       "net10.0": {
@@ -3263,7 +3263,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.302/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.AspNetCore": "(,10.0.32767]",
           "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
