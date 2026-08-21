@@ -15,7 +15,9 @@ class Session:
 
 @dataclass
 class ClientNode:
-    """Represents the local client node identity and active session."""
+    """Represents the local client node identity, network session, and active training session."""
     node_id: str
     coordinator_url: str
+    bootstrap_url: str = "http://localhost:6000"
+    peer_id: Optional[str] = None
     active_session: Optional[Session] = None

@@ -1,0 +1,194 @@
+openapi: 3.0.3
+info:
+  title: TrainSwarm Bootstrap Relay API
+  description: Control-plane peer registry and DCUtR relay messaging service for TrainSwarm.
+  version: 1.0.0
+servers:
+  - url: http://localhost:6000
+    description: Local Bootstrap Relay Instance
+
+paths:
+  /api/health:
+    get:
+      summary: Health check endpoint
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  service:
+                    type: string
+                    example: "TrainSwarm-Bootstrap"
+
+  /api/peers/register:
+    post:
+      summary: Register a node with the Bootstrap relay
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterPeerRequest'
+      responses:
+        '200':
+          description: Successfully registered peer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterPeerResponse'
+        '400':
+          description: Invalid registration payload
+
+  /api/peers:
+    get:
+      summary: List all active registered peers
+      responses:
+        '200':
+          description: List of peers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PeerItem'
+
+  /api/relay/send:
+    post:
+      summary: Enqueue a relayed message for a destination peer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendRelayMessageRequest'
+      responses:
+        '200':
+          description: Message accepted for relay
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messageId:
+                    type: string
+                  status:
+                    type: string
+                    example: "enqueued"
+        '404':
+          description: Target peer not registered
+
+  /api/relay/inbox/{peerId}:
+    get:
+      summary: Retrieve and drain queued relayed messages for a peer
+      parameters:
+        - name: peerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Queued messages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelayInboxResponse'
+
+components:
+  schemas:
+    RegisterPeerRequest:
+      type: object
+      required:
+        - nodeId
+        - role
+      properties:
+        nodeId:
+          type: string
+          example: "trainer-node-01"
+        role:
+          type: string
+          enum: [trainer, client]
+          example: "trainer"
+        endpoint:
+          type: string
+          example: "127.0.0.1:8001"
+
+    RegisterPeerResponse:
+      type: object
+      required:
+        - peerId
+        - nodeId
+        - role
+        - relayAddress
+        - registeredAt
+      properties:
+        peerId:
+          type: string
+          example: "e1f2a3b4-5678-4abc-9def-0123456789ab"
+        nodeId:
+          type: string
+          example: "trainer-node-01"
+        role:
+          type: string
+          example: "trainer"
+        relayAddress:
+          type: string
+          example: "http://localhost:6000"
+        registeredAt:
+          type: string
+          example: "2026-08-21T20:30:00Z"
+
+    PeerItem:
+      type: object
+      properties:
+        peerId:
+          type: string
+        nodeId:
+          type: string
+        role:
+          type: string
+        endpoint:
+          type: string
+        lastSeenAt:
+          type: string
+
+    SendRelayMessageRequest:
+      type: object
+      required:
+        - sourcePeerId
+        - targetPeerId
+        - payload
+      properties:
+        sourcePeerId:
+          type: string
+        targetPeerId:
+          type: string
+        payload:
+          type: object
+
+    RelayInboxResponse:
+      type: object
+      properties:
+        peerId:
+          type: string
+        messages:
+          type: array
+          items:
+            type: object
+            properties:
+              messageId:
+                type: string
+              sourcePeerId:
+                type: string
+              targetPeerId:
+                type: string
+              payload:
+                type: object
+              timestamp:
+                type: string
