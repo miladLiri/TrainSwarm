@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using TrainSwarm.Coordinator.Domain.Entities;
 
 namespace TrainSwarm.Coordinator.Domain.Context;
@@ -23,7 +23,8 @@ public class CoordinatorDbContext(DbContextOptions<CoordinatorDbContext> options
                 .IsRequired();
             
             entity.Property(x => x.ClientNodeId)
-                .IsRequired();
+                .IsRequired()
+                .HasMaxLength(128);
 
             entity.HasMany(x => x.Trainers)
                 .WithOne(x => x.TrainingSession)

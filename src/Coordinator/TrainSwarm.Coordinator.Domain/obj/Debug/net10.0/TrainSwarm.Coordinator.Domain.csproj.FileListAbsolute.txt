@@ -11,3 +11,16 @@ E:\WorkSpace\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\
 E:\WorkSpace\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\refint\TrainSwarm.Coordinator.Domain.dll
 E:\WorkSpace\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\TrainSwarm.Coordinator.Domain.pdb
 E:\WorkSpace\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\ref\TrainSwarm.Coordinator.Domain.dll
+C:\Users\azure-dev\dev\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\TrainSwarm.Coordinator.Domain.csproj.AssemblyReference.cache
+C:\Users\azure-dev\dev\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\TrainSwarm.Coordinator.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\azure-dev\dev\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\TrainSwarm.Coordinator.Domain.AssemblyInfoInputs.cache
+C:\Users\azure-dev\dev\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\TrainSwarm.Coordinator.Domain.AssemblyInfo.cs
+C:\Users\azure-dev\dev\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\TrainSwarm.Coordinator.Domain.csproj.CoreCompileInputs.cache
+C:\Users\azure-dev\dev\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\TrainSwarm.Coordinator.Domain.sourcelink.json
+C:\Users\azure-dev\dev\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\TrainSwarm.Coordinator.Domain.dll
+C:\Users\azure-dev\dev\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\refint\TrainSwarm.Coordinator.Domain.dll
+C:\Users\azure-dev\dev\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\TrainSwarm.Coordinator.Domain.pdb
+C:\Users\azure-dev\dev\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\bin\Debug\net10.0\TrainSwarm.Coordinator.Domain.deps.json
+C:\Users\azure-dev\dev\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\bin\Debug\net10.0\TrainSwarm.Coordinator.Domain.dll
+C:\Users\azure-dev\dev\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\bin\Debug\net10.0\TrainSwarm.Coordinator.Domain.pdb
+C:\Users\azure-dev\dev\TrainSwarm\src\Coordinator\TrainSwarm.Coordinator.Domain\obj\Debug\net10.0\ref\TrainSwarm.Coordinator.Domain.dll

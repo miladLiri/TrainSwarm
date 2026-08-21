@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using TrainSwarm.Coordinator.Domain.Entities;
 using TrainSwarm.Coordinator.Domain.Services;
 
@@ -60,10 +60,15 @@ public class SessionsController(SessionService sessionService) : ControllerBase
     [HttpPost]
     public async Task<ActionResult<TrainingSession>> AddSession([FromBody] CreateSessionDto request)
     {
+        if (request == null || string.IsNullOrWhiteSpace(request.ClientNodeId))
+        {
+            return BadRequest(new { error = "ClientNodeId is required and cannot be empty." });
+        }
+
         var session = new TrainingSession
         {
-            Name = request.Name,
-            ClientNodeId =  request.ClientNodeId
+            Name = request.Name?.Trim() ?? string.Empty,
+            ClientNodeId = request.ClientNodeId.Trim()
         };
 
         var createdSession = await sessionService.CreateSessionAsync(session);

@@ -1,0 +1,89 @@
+openapi: 3.0.3
+info:
+  title: TrainSwarm Coordinator Session API
+  version: 1.0.0
+  description: API endpoints for managing distributed training sessions in TrainSwarm.
+paths:
+  /api/sessions:
+    post:
+      summary: Create a new training session
+      operationId: createSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionDto'
+      responses:
+        '201':
+          description: Session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingSession'
+        '400':
+          description: Validation error (e.g. missing or empty ClientNodeId)
+    get:
+      summary: List all training sessions
+      operationId: getSessions
+      responses:
+        '200':
+          description: List of training sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrainingSession'
+  /api/sessions/{sessionId}:
+    get:
+      summary: Get session details by ID
+      operationId: getSessionById
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Training session found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingSession'
+        '404':
+          description: Session not found
+components:
+  schemas:
+    CreateSessionDto:
+      type: object
+      required:
+        - clientNodeId
+      properties:
+        clientNodeId:
+          type: string
+          description: Unique string identifier of the client node initiating the session
+          example: "node-client-01"
+        name:
+          type: string
+          nullable: true
+          description: Optional human-readable name for the session. Auto-generated if omitted.
+          example: "CIFAR10-Distributed-Run-01"
+    TrainingSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        name:
+          type: string
+          example: "CIFAR10-Distributed-Run-01"
+        clientNodeId:
+          type: string
+          example: "node-client-01"
+        status:
+          type: string
+          example: "NONE"

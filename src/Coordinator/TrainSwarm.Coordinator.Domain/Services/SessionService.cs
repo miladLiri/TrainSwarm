@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using TrainSwarm.Coordinator.Domain.Context;
 using TrainSwarm.Coordinator.Domain.Entities;
 
@@ -10,6 +10,16 @@ public class SessionService(CoordinatorDbContext dbContext)
 {
     public async Task<TrainingSession> CreateSessionAsync(TrainingSession session)
     {
+        if (string.IsNullOrWhiteSpace(session.ClientNodeId))
+        {
+            throw new ArgumentException("ClientNodeId cannot be null or empty.", nameof(session.ClientNodeId));
+        }
+
+        if (string.IsNullOrWhiteSpace(session.Name))
+        {
+            session.Name = $"Session-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        }
+
         if (session.Id == Guid.Empty)
             session.Id = Guid.NewGuid();
 

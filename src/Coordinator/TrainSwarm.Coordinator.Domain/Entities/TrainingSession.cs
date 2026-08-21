@@ -1,4 +1,4 @@
-﻿namespace TrainSwarm.Coordinator.Domain.Entities;
+namespace TrainSwarm.Coordinator.Domain.Entities;
 
 public class TrainingSession
 {
@@ -8,8 +8,7 @@ public class TrainingSession
 
     public SessionStatus Status { get; set; } = SessionStatus.NONE;
     
-    public Guid ClientNodeId { get; set; } 
+    public string ClientNodeId { get; set; } = string.Empty;
      
-    public  ICollection<Trainer> Trainers { get; set; }
-
-}
+    public ICollection<Trainer> Trainers { get; set; } = new List<Trainer>();
+}
