@@ -1,7 +1,8 @@
 <!-- Sync Impact Report
-Version: 1.0.0 -> 1.0.1
+Version: 1.0.1 -> 2.0.0
 Modified Principles:
-- (none — all five principles unchanged)
+- II. Language and Runtime Strictness -> II. Language, Runtime, and Application Strictness (Updated Bootstrap runtime from .NET to Python; defined explicit application models: Client and Trainer as console applications, Bootstrap as a web application, Coordinator as a web API; specified DCUtR relay node role for Bootstrap in P2P communication)
+- Architecture Boundaries & Service Definitions (Updated Bootstrap service to Python Web Application with DCUtR relay node role; updated Client and Trainer service definitions as Python Console Applications; updated Coordinator as .NET Web API)
 Added Sections:
 - (none)
 Removed Sections:
@@ -9,8 +10,8 @@ Removed Sections:
 Deferred Items:
 - None
 Notes:
-- Re-validation pass with identical user input.
-  All placeholders resolved, dates verified, principles unchanged.
+- Bootstrap runtime transitioned from .NET to Python, functioning as a web application and DCUtR relay node.
+- Client and Trainer explicitly defined as Python console applications.
 -->
 # TrainSwarm Constitution
 
@@ -27,21 +28,25 @@ completely separate from data-plane services (`Trainer` and
   aggregation results.
 - Storage ownership MUST remain local to the owning service.
 
-### II. Language and Runtime Strictness
-The technology stack is strict and MUST NOT be deviated from without
-explicit governance approval.
-- **.NET** MUST be used for `Bootstrap` and `Coordinator`
-  (Control Plane).
-- **Python** MUST be used for `Trainer` and `Client + Aggregator`
-  (Data Plane).
+### II. Language, Runtime, and Application Strictness
+The technology stack and application forms are strict and MUST NOT be
+deviated from without explicit governance approval.
+- **.NET** MUST be used for `Coordinator` (Control Plane).
+- **Python** MUST be used for `Bootstrap` (Control Plane), `Trainer`,
+  and `Client + Aggregator` (Data Plane).
+- **Application Models**:
+  - `Client` and `Trainer` MUST be implemented as **console applications**.
+  - `Bootstrap` MUST be implemented as a **web application**.
+  - `Coordinator` MUST be implemented as a **web API application**.
 - **PyTorch** MUST be used as the training framework on the Trainer
   side.
 - **SQL Server** is the designated database if persistence is required.
 - **REST** is the initial communication layer for control-plane and
   client-service interactions.
-- Transfer of checkpoints, dataset shards, weights, and all data-plane
-  communication MUST be peer-to-peer via NAT hole punching, relayed
-  initially by the Bootstrap service.
+- **P2P & DCUtR Communication**: Transfer of checkpoints, dataset shards,
+  weights, and peer-to-peer communication MUST use NAT hole punching
+  via DCUtR (Direct Connection Upgrade through Relay) relay P2P
+  communication, with `Bootstrap` serving as the relay node.
 
 ### III. Explicit Contracts & Boundaries
 Cross-service interactions MUST be treated as versioned contracts.
@@ -93,38 +98,43 @@ prohibited:
 The system consists of four primary services with strict
 responsibilities:
 
-1. **Bootstrap Service (Control Plane, .NET)**
+1. **Bootstrap Service (Control Plane, Python Web Application)**
+   - Implemented as a Python web application.
    - Provides initial peer discovery and entry-point information.
    - Accepts node registration metadata.
    - Exposes peer lookup/bootstrap metadata via REST.
-   - Performs relay role for NAT hole punching between clients and
-     trainers.
+   - Functions as a relay node in DCUtR (Direct Connection Upgrade
+     through Relay) relay P2P communication to facilitate NAT hole
+     punching between clients and trainers.
 
-2. **Coordinator Service (Control Plane, .NET)**
+2. **Coordinator Service (Control Plane, .NET Web API)**
+   - Implemented as a .NET web API.
    - Registers Trainers and tracks their availability/liveness.
    - Creates and tracks training sessions, assigning Trainers to them.
    - Exposes session and assignment status via REST.
 
-3. **Client + Aggregator Service (Data Plane, Python)**
+3. **Client + Aggregator Service (Data Plane, Python Console Application)**
+   - Implemented as a Python console application.
    - Creates and owns training sessions.
    - Manages checkpoint metadata.
    - Receives training updates from Trainers, aggregates them, and
      performs weight aggregation.
-   - Exposes progress and job state via REST.
+   - Exposes progress and job state.
 
-4. **Trainer Service (Data Plane, Python)**
+4. **Trainer Service (Data Plane, Python Console Application)**
+   - Implemented as a Python console application.
    - Registers with the system and receives assigned training sessions.
    - Loads checkpoints and dataset shards.
    - Performs local fine-tuning (PyTorch).
-   - Submits update metadata or results back to the Client.
+   - Submits update metadata or results back to the Client via P2P.
 
 ## Governance
 
 This Constitution supersedes all other practices for the TrainSwarm
 repository.
 - **Amendments:** Any changes to these rules (especially language
-  boundaries or service responsibilities) require documentation and
-  approval.
+  boundaries, application types, or service responsibilities) require
+  documentation and approval.
 - **Versioning:** The constitution follows semantic versioning. MAJOR
   for principle removals/redefinitions, MINOR for new principles or
   material expansions, PATCH for clarifications and wording.
@@ -133,4 +143,4 @@ repository.
 - **Production Assumptions:** Do NOT assume a finalized production
   deployment model at this stage.
 
-**Version**: 1.0.1 | **Ratified**: 2026-08-19 | **Last Amended**: 2026-08-19
+**Version**: 2.0.0 | **Ratified**: 2026-08-19 | **Last Amended**: 2026-08-21
