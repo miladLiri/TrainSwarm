@@ -1,0 +1,170 @@
+syntax = "proto3";
+
+package p2p.v1;
+
+option go_package = "internal/api/p2pv1";
+
+service P2PNode {
+  // Node Management
+  rpc GetNodeInfo(GetNodeInfoRequest) returns (GetNodeInfoResponse);
+  
+  // Connection Management
+  rpc Connect(ConnectRequest) returns (ConnectResponse);
+  rpc Disconnect(DisconnectRequest) returns (DisconnectResponse);
+  rpc GetConnectionStatus(GetConnectionStatusRequest) returns (GetConnectionStatusResponse);
+  
+  // Event Subscription
+  rpc WatchEvents(WatchEventsRequest) returns (stream NodeEvent);
+  
+  // File Transfers
+  rpc SendFile(SendFileRequest) returns (stream TransferEvent);
+  rpc AcceptFile(AcceptFileRequest) returns (stream TransferEvent);
+  rpc CancelTransfer(CancelTransferRequest) returns (CancelTransferResponse);
+  rpc GetTransferStatus(GetTransferStatusRequest) returns (TransferStatusResponse);
+}
+
+// --- Enums ---
+
+enum Reachability {
+  REACHABILITY_UNKNOWN = 0;
+  REACHABILITY_PUBLIC = 1;
+  REACHABILITY_PRIVATE = 2;
+  REACHABILITY_RELAY_ONLY = 3;
+}
+
+enum ConnectionState {
+  STATE_DISCONNECTED = 0;
+  STATE_CONNECTING = 1;
+  STATE_RELAY_CONNECTED = 2;
+  STATE_PUNCHING = 3;
+  STATE_DIRECT_CONNECTED = 4;
+  STATE_FAILED = 5;
+}
+
+enum EventType {
+  EVENT_UNKNOWN = 0;
+  EVENT_PEER_CONNECTED = 1;
+  EVENT_PEER_DISCONNECTED = 2;
+  EVENT_CONNECTION_UPGRADED_TO_DIRECT = 3;
+  EVENT_HOLE_PUNCH_FAILED = 4;
+  EVENT_TRANSFER_REQUESTED = 5;
+  EVENT_TRANSFER_STARTED = 6;
+  EVENT_TRANSFER_PROGRESS = 7;
+  EVENT_TRANSFER_COMPLETED = 8;
+  EVENT_TRANSFER_FAILED = 9;
+  EVENT_TRANSFER_CANCELLED = 10;
+}
+
+// --- Messages ---
+
+message GetNodeInfoRequest {}
+
+message GetNodeInfoResponse {
+  string peer_id = 1;
+  repeated string listen_addresses = 2;
+  repeated string relay_addresses = 3;
+  Reachability reachability = 4;
+  string grpc_api_version = 5;
+}
+
+message ConnectRequest {
+  string peer_id = 1;
+  repeated string multiaddrs = 2; // Can be direct or relay circuit multiaddrs
+  int32 timeout_ms = 3;
+}
+
+message ConnectResponse {
+  string connection_id = 1;
+  string peer_id = 2;
+  ConnectionState state = 3;
+  string transport = 4;
+  bool direct = 5;
+  string relay_address = 6;
+  string error = 7;
+}
+
+message DisconnectRequest {
+  string peer_id = 1;
+}
+
+message DisconnectResponse {
+  bool success = 1;
+}
+
+message GetConnectionStatusRequest {
+  string peer_id = 1;
+}
+
+message GetConnectionStatusResponse {
+  string peer_id = 1;
+  string connection_id = 2;
+  ConnectionState state = 3;
+  bool direct = 4;
+  string transport = 5;
+  repeated string remote_addresses = 6;
+  int64 connected_at = 7; // Unix timestamp
+  int64 last_activity = 8; // Unix timestamp
+}
+
+message WatchEventsRequest {}
+
+message NodeEvent {
+  EventType type = 1;
+  string peer_id = 2;
+  string transfer_id = 3;
+  string message = 4;
+  
+  // Used only when type == EVENT_TRANSFER_REQUESTED
+  TransferMetadata metadata = 5;
+}
+
+message TransferMetadata {
+  string file_name = 1;
+  int64 file_size = 2;
+  string sha256 = 3;
+}
+
+message SendFileRequest {
+  string transfer_id = 1;
+  string peer_id = 2;
+  string file_name = 3;
+  int64 file_size = 4;
+  string sha256 = 5;
+  string source_path = 6;
+  bool overwrite = 7;
+}
+
+message AcceptFileRequest {
+  string transfer_id = 1;
+  string destination_path = 2;
+  bool overwrite = 3;
+}
+
+message TransferEvent {
+  string transfer_id = 1;
+  EventType state = 2;
+  int64 bytes_transferred = 3;
+  int64 total_bytes = 4;
+  int64 speed_bps = 5;
+  float progress = 6;
+  string error = 7;
+}
+
+message CancelTransferRequest {
+  string transfer_id = 1;
+}
+
+message CancelTransferResponse {
+  bool success = 1;
+}
+
+message GetTransferStatusRequest {
+  string transfer_id = 1;
+}
+
+message TransferStatusResponse {
+  string transfer_id = 1;
+  EventType state = 2;
+  int64 bytes_transferred = 3;
+  int64 total_bytes = 4;
+}
