@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -20,11 +21,11 @@ import (
 
 func main() {
 	keyPath := flag.String("key", "identity.key", "Path to libp2p private key file")
-	p2pPort := flag.Int("p2p-port", 9000, "Port for P2P connections")
-	grpcPort := flag.Int("grpc-port", 50051, "Port for localhost gRPC API")
+	p2pPort := flag.Int("p2p-port", getEnvInt("P2P_PORT", 9000), "Port for P2P connections")
+	grpcPort := flag.Int("grpc-port", getEnvInt("GRPC_PORT", 50051), "Port for localhost gRPC API")
 	relayHost := flag.String("relay-host", os.Getenv("RELAY_HOST"), "IP or hostname of the relay server to fetch PeerID from")
-	relayHttpPort := flag.Int("relay-http-port", os.Getenv("RELAY_HTTP_PORT"), "Http port of realy server")
-	relayPort := flag.String("relay-port", "4001", "TCP port of the relay server")
+	relayHttpPort := flag.Int("relay-http-port", getEnvInt("RELAY_HTTP_PORT", 8090), "Http port of realy server")
+	relayPort := flag.Int("relay-port", getEnvInt("RELAY_PORT", 4001), "TCP port of the relay server")
 	flag.Parse()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -54,7 +55,7 @@ func main() {
 	if *relayHost != "" {
 		var relayPeerID string
 		for i := 0; i < 30; i++ {
-			resp, err := http.Get(fmt.Sprintf("http://%s:%s/peerid", *relayHost, *relayHttpPort))
+			resp, err := http.Get(fmt.Sprintf("http://%s:%d/peerid", *relayHost, *relayHttpPort))
 			if err == nil {
 				body, err := io.ReadAll(resp.Body)
 				resp.Body.Close()
@@ -63,18 +64,18 @@ func main() {
 					break
 				}
 			}
-			log.Printf("Waiting for relay HTTP API at %s:%s...", *relayHost, *relayHttpPort)
+			log.Printf("Waiting for relay HTTP API at %s:%d...", *relayHost, *relayHttpPort)
 			time.Sleep(2 * time.Second)
 		}
 		if relayPeerID == "" {
-			log.Fatalf("Failed to fetch relay peer ID from %s:%s after retries", *relayHost, *relayHttpPort)
+			log.Fatalf("Failed to fetch relay peer ID from %s:%d after retries", *relayHost, *relayHttpPort)
 		}
 
 		prefix := "/dns4"
 		if net.ParseIP(*relayHost) != nil {
 			prefix = "/ip4"
 		}
-		relayAddr = fmt.Sprintf("%s/%s/tcp/%s/p2p/%s", prefix, *relayHost, *relayPort, relayPeerID)
+		relayAddr = fmt.Sprintf("%s/%s/tcp/%d/p2p/%s", prefix, *relayHost, *relayPort, relayPeerID)
 		log.Printf("Constructed Relay Multiaddr: %s", relayAddr)
 	}
 
@@ -108,4 +109,13 @@ func main() {
 	case <-sigCh:
 		log.Println("Shutting down...")
 	}
+}
+
+func getEnvInt(key string, defaultVal int) int {
+	if val := os.Getenv(key); val != "" {
+		if intVal, err := strconv.Atoi(val); err == nil {
+			return intVal
+		}
+	}
+	return defaultVal
 }
