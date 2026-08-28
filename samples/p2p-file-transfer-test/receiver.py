@@ -19,13 +19,13 @@ def run():
     
     if len(sys.argv) >= 3 and sys.argv[2] == "--get-peer-id":
         try:
-            info = stub.GetNodeInfo(p2p_pb2.GetNodeInfoRequest())
+            info = stub.GetNodeInfo(p2p_pb2.GetNodeInfoRequest(), timeout=2)
             print(info.peer_id, end="")
             sys.exit(0)
         except grpc.RpcError:
             sys.exit(1)
 
-    info = stub.GetNodeInfo(p2p_pb2.GetNodeInfoRequest())
+    info = stub.GetNodeInfo(p2p_pb2.GetNodeInfoRequest(), timeout=5)
     node_b_id = info.peer_id
     
     print(f"[Receiver] Connected to Node B gRPC on localhost:{port}")

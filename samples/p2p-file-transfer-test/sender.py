@@ -19,8 +19,8 @@ def run():
     relay_host = sys.argv[4]
     
     # Fetch relay peer ID
-    print(f"[Sender] Fetching relay peer ID from http://{relay_host}:80/peerid...")
-    req = urllib.request.urlopen(f"http://{relay_host}:80/peerid")
+    print(f"[Sender] Fetching relay peer ID from http://{relay_host}:8090/peerid...")
+    req = urllib.request.urlopen(f"http://{relay_host}:8090/peerid")
     relay_peer_id = req.read().decode('utf-8').strip()
     print(f"[Sender] Relay Peer ID: {relay_peer_id}")
     
