@@ -34,9 +34,9 @@ func NewServer(n *node.Node, eb *EventBus) *Server {
 	}
 }
 
-// Start serves the gRPC API on 127.0.0.1.
+// Start serves the gRPC API on 0.0.0.0.
 func (s *Server) Start(port int) error {
-	lis, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	lis, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", port))
 	if err != nil {
 		return fmt.Errorf("failed to listen: %w", err)
 	}
