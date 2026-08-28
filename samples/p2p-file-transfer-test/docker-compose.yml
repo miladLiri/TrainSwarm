@@ -14,7 +14,7 @@ services:
     environment:
       - P2P_RELAY_LISTEN_TCP=/ip4/0.0.0.0/tcp/4001
       - P2P_RELAY_LISTEN_QUIC=/ip4/0.0.0.0/udp/4001/quic-v1
-      - P2P_RELAY_IDENTITY_PATH=/data/relay.key
+      - P2P_RELAY_IDENTITY_PATH=/tmp/relay.key
       - P2P_RELAY_LOG_LEVEL=debug
       - P2P_RELAY_MAX_RELAYED_BYTES=1073741824
       - P2P_RELAY_MAX_RELAY_DURATION=30m
@@ -26,7 +26,9 @@ services:
       - nat-a
     ports:
       - "50051:50051"
-    command: ["-p2p-port", "9000", "-grpc-port", "50051", "-relay", "${RELAY_MULTIADDR}"]
+    environment:
+      - RELAY_HOST=host.docker.internal
+    command: ["-p2p-port", "9000", "-grpc-port", "50051"]
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -37,6 +39,8 @@ services:
       - nat-b
     ports:
       - "50052:50052"
-    command: ["-p2p-port", "9000", "-grpc-port", "50052", "-relay", "${RELAY_MULTIADDR}"]
+    environment:
+      - RELAY_HOST=host.docker.internal
+    command: ["-p2p-port", "9000", "-grpc-port", "50052"]
     extra_hosts:
       - "host.docker.internal:host-gateway"

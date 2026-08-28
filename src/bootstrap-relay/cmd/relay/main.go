@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"net/http"
 
 	"bootstrap-relay/internal/config"
 	"bootstrap-relay/internal/relay"
@@ -51,6 +52,16 @@ func main() {
 	for _, addr := range h.Addrs() {
 		log.Printf("level=info msg=\"Listening on\" addr=\"%s/p2p/%s\"", addr.String(), h.ID().String())
 	}
+
+	go func() {
+		http.HandleFunc("/peerid", func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(h.ID().String()))
+		})
+		log.Println("level=info msg=\"Starting HTTP server for PeerID on :80\"")
+		if err := http.ListenAndServe(":80", nil); err != nil {
+			log.Fatalf("level=error msg=\"HTTP server failed\" err=\"%v\"", err)
+		}
+	}()
 
 	// Wait for interrupt signal
 	sigCh := make(chan os.Signal, 1)

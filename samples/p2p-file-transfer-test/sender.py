@@ -3,19 +3,26 @@ import p2p_pb2
 import p2p_pb2_grpc
 import sys
 import time
+import urllib.request
 
 # Force unbuffered output
 sys.stdout.reconfigure(line_buffering=True)
 
 def run():
     if len(sys.argv) < 5:
-        print("Usage: python sender.py <port> <target_peer_id> <file_path> <relay_peer_id>")
+        print("Usage: python sender.py <port> <target_peer_id> <file_path> <relay_host>")
         sys.exit(1)
         
     port = sys.argv[1]
     target_peer_id = sys.argv[2]
     file_path = sys.argv[3]
-    relay_peer_id = sys.argv[4]
+    relay_host = sys.argv[4]
+    
+    # Fetch relay peer ID
+    print(f"[Sender] Fetching relay peer ID from http://{relay_host}:80/peerid...")
+    req = urllib.request.urlopen(f"http://{relay_host}:80/peerid")
+    relay_peer_id = req.read().decode('utf-8').strip()
+    print(f"[Sender] Relay Peer ID: {relay_peer_id}")
     
     channel = grpc.insecure_channel(f'localhost:{port}')
     stub = p2p_pb2_grpc.P2PNodeStub(channel)
@@ -23,7 +30,7 @@ def run():
     print(f"[Sender] Connected to Node A gRPC on localhost:{port}")
     
     # Target address via relay
-    relay_addr = f"/dns4/host.docker.internal/tcp/4001/p2p/{relay_peer_id}/p2p-circuit/p2p/{target_peer_id}"
+    relay_addr = f"/dns4/{relay_host}/tcp/4001/p2p/{relay_peer_id}/p2p-circuit/p2p/{target_peer_id}"
     print(f"[Sender] Connecting to Node B via relay circuit: {relay_addr}")
     
     try:

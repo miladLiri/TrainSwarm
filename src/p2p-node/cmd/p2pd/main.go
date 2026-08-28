@@ -3,10 +3,16 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
+	"io"
 	"log"
+	"net"
+	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
+	"time"
 
 	"p2p-node/internal/api"
 	"p2p-node/internal/node"
@@ -16,7 +22,8 @@ func main() {
 	keyPath := flag.String("key", "identity.key", "Path to libp2p private key file")
 	p2pPort := flag.Int("p2p-port", 9000, "Port for P2P connections")
 	grpcPort := flag.Int("grpc-port", 50051, "Port for localhost gRPC API")
-	relayAddr := flag.String("relay", "", "Optional multiaddress of a relay to connect and reserve a slot on")
+	relayHost := flag.String("relay-host", os.Getenv("RELAY_HOST"), "IP or hostname of the relay server to fetch PeerID from")
+	relayPort := flag.String("relay-port", "4001", "TCP port of the relay server")
 	flag.Parse()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -42,11 +49,39 @@ func main() {
 		log.Printf("Listening on: %s/p2p/%s", addr.String(), p2pNode.Host.ID().String())
 	}
 
-	if *relayAddr != "" {
-		if err := node.ReserveRelaySlot(ctx, p2pNode.Host, *relayAddr); err != nil {
-			log.Printf("Warning: failed to reserve slot on relay %s: %v", *relayAddr, err)
+	relayAddr := ""
+	if *relayHost != "" {
+		var relayPeerID string
+		for i := 0; i < 30; i++ {
+			resp, err := http.Get(fmt.Sprintf("http://%s:80/peerid", *relayHost))
+			if err == nil {
+				body, err := io.ReadAll(resp.Body)
+				resp.Body.Close()
+				if err == nil && len(body) > 0 {
+					relayPeerID = strings.TrimSpace(string(body))
+					break
+				}
+			}
+			log.Printf("Waiting for relay HTTP API at %s:80...", *relayHost)
+			time.Sleep(2 * time.Second)
+		}
+		if relayPeerID == "" {
+			log.Fatalf("Failed to fetch relay peer ID from %s:80 after retries", *relayHost)
+		}
+
+		prefix := "/dns4"
+		if net.ParseIP(*relayHost) != nil {
+			prefix = "/ip4"
+		}
+		relayAddr = fmt.Sprintf("%s/%s/tcp/%s/p2p/%s", prefix, *relayHost, *relayPort, relayPeerID)
+		log.Printf("Constructed Relay Multiaddr: %s", relayAddr)
+	}
+
+	if relayAddr != "" {
+		if err := node.ReserveRelaySlot(ctx, p2pNode.Host, relayAddr); err != nil {
+			log.Printf("Warning: failed to reserve slot on relay %s: %v", relayAddr, err)
 		} else {
-			log.Printf("Successfully reserved slot on relay %s", *relayAddr)
+			log.Printf("Successfully reserved slot on relay %s", relayAddr)
 		}
 	}
 

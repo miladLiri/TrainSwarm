@@ -6,11 +6,6 @@ $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 Set-Location $ScriptDir
 
-# Ensure .env exists so docker compose doesn't warn during first run
-if (-not (Test-Path ".env")) {
-    Set-Content -Path ".env" -Value "RELAY_MULTIADDR="
-}
-
 # Create python venv if not exists
 if (-not (Test-Path venv)) {
     Write-Host "Creating Python virtual environment..."
@@ -30,25 +25,20 @@ docker compose down -v 2>$null
 Write-Host "`n[1/5] Starting Relay node..."
 docker compose up -d --build relay
 
-# 2. Wait for Relay Peer ID
-$peerId = $null
-Write-Host "Waiting for relay to generate Peer ID..."
-while ($null -eq $peerId) {
-    Start-Sleep -Seconds 2
-    $logs = docker compose logs relay
-    if ($logs -match 'peer_id="([^"]+)"') {
-        $peerId = $Matches[1]
+# 2. Wait for Relay HTTP API
+Write-Host "Waiting for relay HTTP API on port 80..."
+while ($true) {
+    try {
+        $relayPeerId = Invoke-RestMethod -Uri "http://localhost:80/peerid" -ErrorAction Stop
+        break
+    } catch {
+        Start-Sleep -Seconds 1
     }
 }
-Write-Host "Relay Peer ID: $peerId"
+Write-Host "Relay Peer ID from HTTP API: $relayPeerId"
 
 # 3. Start Nodes
-# Write to .env to securely pass variables to docker compose and eliminate warnings
-$relayMultiaddr = "/dns4/host.docker.internal/tcp/4001/p2p/$peerId"
-Set-Content -Path ".env" -Value "RELAY_MULTIADDR=$relayMultiaddr"
-
 Write-Host "`n[2/5] Starting Node A and Node B..."
-Write-Host "Using Relay Addr: $relayMultiaddr"
 docker compose up -d --build node-a node-b
 
 Start-Sleep -Seconds 5
@@ -83,7 +73,7 @@ Start-Sleep -Seconds 3
 
 # 7. Run Sender (Node A)
 Write-Host "`n[4/5] Starting Sender (Node A)..."
-python sender.py 50051 $nodeBPeerId "test_file.txt" $peerId
+python sender.py 50051 $nodeBPeerId "test_file.txt" "localhost"
 
 Write-Host "`n[5/5] Waiting for receiver to finish..."
 Start-Sleep -Seconds 5
