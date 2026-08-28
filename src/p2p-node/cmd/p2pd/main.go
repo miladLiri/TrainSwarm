@@ -23,6 +23,7 @@ func main() {
 	p2pPort := flag.Int("p2p-port", 9000, "Port for P2P connections")
 	grpcPort := flag.Int("grpc-port", 50051, "Port for localhost gRPC API")
 	relayHost := flag.String("relay-host", os.Getenv("RELAY_HOST"), "IP or hostname of the relay server to fetch PeerID from")
+	relayHttpPort := flag.Int("relay-http-port", os.Getenv("RELAY_HTTP_PORT"), "Http port of realy server")
 	relayPort := flag.String("relay-port", "4001", "TCP port of the relay server")
 	flag.Parse()
 
@@ -53,7 +54,7 @@ func main() {
 	if *relayHost != "" {
 		var relayPeerID string
 		for i := 0; i < 30; i++ {
-			resp, err := http.Get(fmt.Sprintf("http://%s:80/peerid", *relayHost))
+			resp, err := http.Get(fmt.Sprintf("http://%s:%s/peerid", *relayHost, *relayHttpPort))
 			if err == nil {
 				body, err := io.ReadAll(resp.Body)
 				resp.Body.Close()
@@ -62,11 +63,11 @@ func main() {
 					break
 				}
 			}
-			log.Printf("Waiting for relay HTTP API at %s:80...", *relayHost)
+			log.Printf("Waiting for relay HTTP API at %s:%s...", *relayHost, *relayHttpPort)
 			time.Sleep(2 * time.Second)
 		}
 		if relayPeerID == "" {
-			log.Fatalf("Failed to fetch relay peer ID from %s:80 after retries", *relayHost)
+			log.Fatalf("Failed to fetch relay peer ID from %s:%s after retries", *relayHost, *relayHttpPort)
 		}
 
 		prefix := "/dns4"

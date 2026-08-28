@@ -14,6 +14,6 @@ COPY --from=builder /bootstrap-relay /usr/local/bin/bootstrap-relay
 # Expose standard go-libp2p ports
 EXPOSE 4001/tcp
 EXPOSE 4001/udp
-EXPOSE 80/tcp
+EXPOSE 8090/tcp
 
 ENTRYPOINT ["bootstrap-relay"]

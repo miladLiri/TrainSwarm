@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	ListenTCP        string
+	ListenHTTP       string
 	ListenQUIC       string
 	IdentityPath     string
 	MaxReservations  int
@@ -21,6 +22,7 @@ type Config struct {
 func Load() (*Config, error) {
 	cfg := &Config{
 		ListenTCP:        getEnv("P2P_RELAY_LISTEN_TCP", ""),
+		ListenHTTP:       getEnv("P2P_RELAY_LISTEN_HTTP", ""),
 		ListenQUIC:       getEnv("P2P_RELAY_LISTEN_QUIC", ""),
 		IdentityPath:     getEnv("P2P_RELAY_IDENTITY_PATH", ""),
 		MaxReservations:  getEnvInt("P2P_RELAY_MAX_RESERVATIONS", 128),

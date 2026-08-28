@@ -57,8 +57,8 @@ func main() {
 		http.HandleFunc("/peerid", func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(h.ID().String()))
 		})
-		log.Println("level=info msg=\"Starting HTTP server for PeerID on :80\"")
-		if err := http.ListenAndServe(":80", nil); err != nil {
+		log.Println("level=info msg=\"Starting HTTP server for PeerID\"")
+		if err := http.ListenAndServe(fmt.Sprintf(":%s", cfg.ListenHTTP), nil); err != nil {
 			log.Fatalf("level=error msg=\"HTTP server failed\" err=\"%v\"", err)
 		}
 	}()

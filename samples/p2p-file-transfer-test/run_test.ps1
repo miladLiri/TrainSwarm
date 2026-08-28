@@ -26,10 +26,10 @@ Write-Host "`n[1/5] Starting Relay node..."
 docker compose up -d --build relay
 
 # 2. Wait for Relay HTTP API
-Write-Host "Waiting for relay HTTP API on port 80..."
+Write-Host "Waiting for relay HTTP API on port 8090..."
 while ($true) {
     try {
-        $relayPeerId = Invoke-RestMethod -Uri "http://localhost:80/peerid" -ErrorAction Stop
+        $relayPeerId = Invoke-RestMethod -Uri "http://localhost:8090/peerid" -ErrorAction Stop
         break
     } catch {
         Start-Sleep -Seconds 1
