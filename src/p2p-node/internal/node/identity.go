@@ -3,7 +3,6 @@ package node
 import (
 	"crypto/rand"
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/libp2p/go-libp2p/core/crypto"

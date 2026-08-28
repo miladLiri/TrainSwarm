@@ -3,11 +3,55 @@ package node
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/client"
 )
+
+func ReserveRelaySlot(ctx context.Context, h host.Host, relayAddr string) error {
+	ma, err := multiaddr.NewMultiaddr(relayAddr)
+	if err != nil {
+		return fmt.Errorf("invalid relay multiaddr: %w", err)
+	}
+
+	relayInfo, err := peer.AddrInfoFromP2pAddr(ma)
+	if err != nil {
+		return fmt.Errorf("invalid relay AddrInfo: %w", err)
+	}
+
+	if err := h.Connect(ctx, *relayInfo); err != nil {
+		return fmt.Errorf("failed to connect to relay: %w", err)
+	}
+
+	reservation, err := client.Reserve(ctx, h, *relayInfo)
+	if err != nil {
+		return fmt.Errorf("failed to reserve slot: %w", err)
+	}
+
+	// Simple background refresh
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(time.Until(reservation.Expiration) - 1*time.Minute):
+				res, err := client.Reserve(ctx, h, *relayInfo)
+				if err == nil {
+					reservation = res
+				} else {
+					time.Sleep(30 * time.Second) // backoff
+				}
+			}
+		}
+	}()
+
+	return nil
+}
 
 // Node represents the P2P sidecar node.
 type Node struct {

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TrainSwarm.Coordinator.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6e170f644295241a1769094ae70af1df6f00a949")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7576f8b076aad921926c51a353350c1ecde49a49")]
 [assembly: System.Reflection.AssemblyProductAttribute("TrainSwarm.Coordinator.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TrainSwarm.Coordinator.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

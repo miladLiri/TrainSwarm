@@ -1,15 +1,15 @@
 <!-- Sync Impact Report
-Version: 3.0.0 -> 4.0.0
+Version: 4.0.0 -> 4.1.0
 Modified Principles:
-- II. Language, Runtime, and Application Strictness (Changed Bootstrap from Python Web Application to Go p2p hole-punching relay server)
+- V. Explicit Prohibitions & AI Guidelines (Added NO MOCKS prohibition)
 Added Sections:
-- (none)
+- VI. Real Functional Implementations (Zero Mocks)
 Removed Sections:
 - (none)
 Deferred Items:
 - None
 Notes:
-- Bootstrap node is now implemented in Go using go-libp2p to natively support Circuit Relay v2 and act as a reliable relay server for DCUtR NAT hole punching.
+- Added non-negotiable rule prohibiting mock, stub, or placeholder implementations across all features, infrastructure, modules, and APIs, strictly requiring real working functionality within specification scope.
 -->
 # TrainSwarm Constitution
 
@@ -76,6 +76,9 @@ optimization or over-design.
 ### V. Explicit Prohibitions & AI Guidelines
 To maintain architecture integrity, the following are strictly
 prohibited:
+- **NO MOCKS:** Do NOT write mock, stub, simulated, or placeholder
+  implementations. All modules, APIs, and infrastructure components
+  MUST deliver real working functionality within specification scope.
 - **NO TESTS:** Do NOT write any kind of test. **EXCEPTION**: End-to-End tests are explicitly permitted and required ONLY for the `p2p-node` service to verify complex P2P hole-punching and networking reliability.
 - **NO CRYPTO:** Do NOT add blockchain, token, or incentive mechanics.
 - **NO RCE:** Do NOT introduce remote code execution or unsafe
@@ -92,6 +95,20 @@ prohibited:
   affected services, the plane (control/data/shared), runtime vs
   structure impact, new state/persistence, and documentation updates.
   Keep AI-generated changes reviewable and narrow in scope.
+
+### VI. Real Functional Implementations (Zero Mocks)
+Every feature, infrastructure component, module, API, and subsystem MUST
+provide real, working functionality within the scope of its specification.
+- **No Stubs or Placeholders:** Code MUST NOT contain dummy routines,
+  no-op placeholders, hardcoded fake return values, or simulated network/storage
+  calls in place of real logic.
+- **End-to-End Operational Integrity:** All specified behaviors—including
+  P2P networking, gRPC endpoints, REST APIs, relay forwarding, model training,
+  checkpoint streaming, and coordinator sessions—MUST execute actual runtime
+  operations against real systems, protocols, and I/O.
+- **Spec-Complete Deliverables:** Every task and deliverable must be fully
+  functional in adherence to its design contract and specifications; partial
+  scaffolding with fake behaviors is strictly unacceptable.
 
 ## Architecture Boundaries & Service Definitions
 
@@ -148,4 +165,4 @@ repository.
 - **Production Assumptions:** Do NOT assume a finalized production
   deployment model at this stage.
 
-**Version**: 4.0.0 | **Ratified**: 2026-08-19 | **Last Amended**: 2026-08-22
+**Version**: 4.1.0 | **Ratified**: 2026-08-19 | **Last Amended**: 2026-08-28
