@@ -8,17 +8,28 @@ import time
 sys.stdout.reconfigure(line_buffering=True)
 
 def run():
-    if len(sys.argv) < 3:
-        print("Usage: python receiver.py <port> <node_b_id>")
+    if len(sys.argv) < 2:
+        print("Usage: python receiver.py <port> [--get-peer-id]")
         sys.exit(1)
         
     port = sys.argv[1]
-    node_b_id = sys.argv[2]
     
     channel = grpc.insecure_channel(f'localhost:{port}')
     stub = p2p_pb2_grpc.P2PNodeStub(channel)
     
+    if len(sys.argv) >= 3 and sys.argv[2] == "--get-peer-id":
+        try:
+            info = stub.GetNodeInfo(p2p_pb2.GetNodeInfoRequest())
+            print(info.peer_id, end="")
+            sys.exit(0)
+        except grpc.RpcError:
+            sys.exit(1)
+
+    info = stub.GetNodeInfo(p2p_pb2.GetNodeInfoRequest())
+    node_b_id = info.peer_id
+    
     print(f"[Receiver] Connected to Node B gRPC on localhost:{port}")
+    print(f"[Receiver] Node ID: {node_b_id}")
     print(f"[Receiver] Waiting for events...")
     
     # Watch events
