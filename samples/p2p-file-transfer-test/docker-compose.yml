@@ -1,5 +1,3 @@
-version: '3.8'
-
 networks:
   nat-a:
     driver: bridge
@@ -9,39 +7,36 @@ networks:
 services:
   relay:
     build:
-      context: ../..
-      dockerfile: samples/p2p-file-transfer-test/relay.Dockerfile
+      context: ../../src/bootstrap-relay
     ports:
       - "4001:4001"
       - "4001:4001/udp"
     environment:
       - P2P_RELAY_LISTEN_TCP=/ip4/0.0.0.0/tcp/4001
       - P2P_RELAY_LISTEN_QUIC=/ip4/0.0.0.0/udp/4001/quic-v1
-      - P2P_RELAY_IDENTITY_PATH=/app/relay.key
+      - P2P_RELAY_IDENTITY_PATH=/data/relay.key
       - P2P_RELAY_LOG_LEVEL=debug
       - P2P_RELAY_MAX_RELAYED_BYTES=1073741824
       - P2P_RELAY_MAX_RELAY_DURATION=30m
 
   node-a:
     build:
-      context: ../..
-      dockerfile: samples/p2p-file-transfer-test/p2pnode.Dockerfile
+      context: ../../src/p2p-node
     networks:
       - nat-a
     ports:
       - "50051:50051"
-    command: ["./p2pd", "-p2p-port", "9000", "-grpc-port", "50051", "-relay", "${RELAY_MULTIADDR}"]
+    command: ["-p2p-port", "9000", "-grpc-port", "50051", "-relay", "${RELAY_MULTIADDR}"]
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
   node-b:
     build:
-      context: ../..
-      dockerfile: samples/p2p-file-transfer-test/p2pnode.Dockerfile
+      context: ../../src/p2p-node
     networks:
       - nat-b
     ports:
       - "50052:50052"
-    command: ["./p2pd", "-p2p-port", "9000", "-grpc-port", "50052", "-relay", "${RELAY_MULTIADDR}"]
+    command: ["-p2p-port", "9000", "-grpc-port", "50052", "-relay", "${RELAY_MULTIADDR}"]
     extra_hosts:
       - "host.docker.internal:host-gateway"

@@ -6,6 +6,11 @@ $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 Set-Location $ScriptDir
 
+# Ensure .env exists so docker compose doesn't warn during first run
+if (-not (Test-Path ".env")) {
+    Set-Content -Path ".env" -Value "RELAY_MULTIADDR="
+}
+
 # Create python venv if not exists
 if (-not (Test-Path venv)) {
     Write-Host "Creating Python virtual environment..."
@@ -19,18 +24,18 @@ Write-Host "Generating gRPC Python stubs from protobuf..."
 python -m grpc_tools.protoc -I ../../specs/004-go-p2p-sidecar/contracts --python_out=. --grpc_python_out=. ../../specs/004-go-p2p-sidecar/contracts/p2p.proto
 
 # Clean up any old runs
-docker-compose down -v 2>$null
+docker compose down -v 2>$null
 
 # 1. Start Relay
 Write-Host "`n[1/5] Starting Relay node..."
-docker-compose up -d --build relay
+docker compose up -d --build relay
 
 # 2. Wait for Relay Peer ID
 $peerId = $null
 Write-Host "Waiting for relay to generate Peer ID..."
 while ($null -eq $peerId) {
     Start-Sleep -Seconds 2
-    $logs = docker-compose logs relay
+    $logs = docker compose logs relay
     if ($logs -match 'peer_id="([^"]+)"') {
         $peerId = $Matches[1]
     }
@@ -38,10 +43,13 @@ while ($null -eq $peerId) {
 Write-Host "Relay Peer ID: $peerId"
 
 # 3. Start Nodes
-$env:RELAY_MULTIADDR = "/dns4/host.docker.internal/tcp/4001/p2p/$peerId"
+# Write to .env to securely pass variables to docker compose and eliminate warnings
+$relayMultiaddr = "/dns4/host.docker.internal/tcp/4001/p2p/$peerId"
+Set-Content -Path ".env" -Value "RELAY_MULTIADDR=$relayMultiaddr"
+
 Write-Host "`n[2/5] Starting Node A and Node B..."
-Write-Host "Using Relay Addr: $env:RELAY_MULTIADDR"
-docker-compose up -d --build node-a node-b
+Write-Host "Using Relay Addr: $relayMultiaddr"
+docker compose up -d --build node-a node-b
 
 Start-Sleep -Seconds 5
 
@@ -50,7 +58,7 @@ $nodeBPeerId = $null
 Write-Host "Fetching Node B Peer ID..."
 while ($null -eq $nodeBPeerId) {
     Start-Sleep -Seconds 1
-    $logs = docker-compose logs node-b
+    $logs = docker compose logs node-b
     if ($logs -match 'P2P Node ID: ([a-zA-Z0-9]+)') {
         $nodeBPeerId = $Matches[1]
     }
@@ -93,7 +101,7 @@ if (Test-Path "received_test_file.txt") {
 
 if (-not $KeepEnv) {
     Write-Host "`nCleaning up docker environment..."
-    docker-compose down -v
+    docker compose down -v
 } else {
-    Write-Host "`nEnvironment kept running. Use 'docker-compose down' to clean up later."
+    Write-Host "`nEnvironment kept running. Use '.\stop.ps1' or 'docker compose down' to clean up later."
 }
