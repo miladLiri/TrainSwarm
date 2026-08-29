@@ -34,14 +34,14 @@ Once the setup is complete, you can run the transfer manually by acting as both 
 ### Step 1: Create a test file in Node A
 Because the Go nodes are running in Docker, the file must exist inside Node A's container so its Go backend can read it.
 ```powershell
-docker compose exec node-a sh -c "echo 'Hello from TrainSwarm Node A!' > /app/test_file.txt"
+docker compose exec node-a sh -c "echo 'Hello from TrainSwarm Node A!' > /tmp/test_file.txt"
 ```
 
 ### Step 2: Start the Owner (Node A)
-In a new terminal (with the virtual environment activated), start the owner script. This script listens for incoming requests on Node A and instructs it to serve `/app/test_file.txt`.
+In a new terminal (with the virtual environment activated), start the owner script. This script listens for incoming requests on Node A and instructs it to serve `/tmp/test_file.txt`.
 ```powershell
 .\venv\Scripts\Activate.ps1
-python owner.py 50051 /app/test_file.txt
+python owner.py 50051 /tmp/test_file.txt
 ```
 **Important:** The script will output Node A's `Node ID` (Peer ID). Copy this ID for the next step. Leave this script running.
 
@@ -57,7 +57,7 @@ python requester.py 50052 <node-a-owner-peer-id> test_file.txt localhost
 2. **Hole Punching**: The receiver logs may print `🎉 Connection upgraded to direct (Hole punch successful!)` if the simulated NAT permitted a direct connection upgrade over DCUtR.
 3. **File Contents**: Verify the file was securely downloaded and saved inside Node B's container:
 ```powershell
-docker compose exec node-b cat /app/received_test_file.txt
+docker compose exec node-b cat /received_test_file.txt
 ```
 You should see the message: `Hello from TrainSwarm Node A!`
 
