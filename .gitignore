@@ -41,3 +41,8 @@ Thumbs.db
 .idea/
 .vscode/
 *.log
+# Go
+*.exe
+*.test
+vendor/
+*.out
