@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using TrainSwarm.Coordinator.Api.Grpc;
+using TrainSwarm.Coordinator.Domain.Commands;
 using TrainSwarm.Coordinator.Domain.Context;
 using TrainSwarm.Coordinator.Domain.Services;
 
@@ -25,6 +27,10 @@ string connectionString =
 
 builder.Services.AddDbContext<CoordinatorDbContext>(options => options.UseSqlServer(connectionString));
 
+builder.Services.AddGrpc();
+builder.Services.AddSingleton<ITrainerConnectionManager, TrainerConnectionManager>();
+builder.Services.AddSingleton<ICommandCenter, CommandCenter>();
+
 builder.Services.AddScoped<SessionService>();
 builder.Services.AddScoped<TrainerService>();
 
@@ -34,7 +40,7 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-
+app.MapGrpcService<CoordinatorCommandServiceImpl>();
 app.MapControllers();   
 app.MapOpenApi();
  
