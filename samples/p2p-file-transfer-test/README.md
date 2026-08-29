@@ -12,8 +12,8 @@ The test spins up 3 Docker containers to simulate a realistic internet scenario:
 Since Node A and Node B are on different networks, they cannot connect to each other directly using internal IP addresses. They both connect outbound to the Relay using the Docker host's IP (`host.docker.internal`). 
 
 The test runs two Python scripts on your host:
-- `receiver.py`: Connects to Node B's gRPC API (`localhost:50052`), subscribes to events, and auto-accepts incoming file transfers.
-- `sender.py`: Connects to Node A's gRPC API (`localhost:50051`), dials Node B using its `/p2p-circuit` relay address, and streams a sample file.
+- `owner.py`: Connects to Node A's gRPC API (`localhost:50051`), listens for requests, and pushes the requested file.
+- `requester.py`: Connects to Node B's gRPC API (`localhost:50052`), dials Node A (the owner) using its `/p2p-circuit` relay address, and requests a file.
 
 Behind the scenes, `go-libp2p` orchestrates a DCUtR (Direct Connection Upgrade through Relay) hole punch. If successful, the connection is upgraded to direct P2P. If the simulated NAT is too restrictive, it falls back to streaming the file via the relay circuit.
 
@@ -29,10 +29,10 @@ First, run the setup script to start the necessary Docker containers and compile
 .\setup.ps1
 ```
 
-Once the setup is complete, determine Node B's Peer ID (e.g. from the logs or other tools), and use it to run the transfer test:
+Once the setup is complete, determine Node A's Peer ID (the Owner), and use it to run the transfer test:
 
 ```powershell
-.\test_transfer.ps1 -PeerId <node-b-peer-id>
+.\test_transfer.ps1 -PeerId <node-a-owner-peer-id>
 ```
 
 If you want to keep the Docker containers running after the test to inspect logs manually:

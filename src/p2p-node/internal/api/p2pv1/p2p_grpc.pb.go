@@ -28,6 +28,7 @@ const (
 	P2PNode_AcceptFile_FullMethodName          = "/p2p.v1.P2PNode/AcceptFile"
 	P2PNode_CancelTransfer_FullMethodName      = "/p2p.v1.P2PNode/CancelTransfer"
 	P2PNode_GetTransferStatus_FullMethodName   = "/p2p.v1.P2PNode/GetTransferStatus"
+	P2PNode_RequestFile_FullMethodName         = "/p2p.v1.P2PNode/RequestFile"
 )
 
 // P2PNodeClient is the client API for P2PNode service.
@@ -47,6 +48,7 @@ type P2PNodeClient interface {
 	AcceptFile(ctx context.Context, in *AcceptFileRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TransferEvent], error)
 	CancelTransfer(ctx context.Context, in *CancelTransferRequest, opts ...grpc.CallOption) (*CancelTransferResponse, error)
 	GetTransferStatus(ctx context.Context, in *GetTransferStatusRequest, opts ...grpc.CallOption) (*TransferStatusResponse, error)
+	RequestFile(ctx context.Context, in *RequestFileRequest, opts ...grpc.CallOption) (*RequestFileResponse, error)
 }
 
 type p2PNodeClient struct {
@@ -174,6 +176,16 @@ func (c *p2PNodeClient) GetTransferStatus(ctx context.Context, in *GetTransferSt
 	return out, nil
 }
 
+func (c *p2PNodeClient) RequestFile(ctx context.Context, in *RequestFileRequest, opts ...grpc.CallOption) (*RequestFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RequestFileResponse)
+	err := c.cc.Invoke(ctx, P2PNode_RequestFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // P2PNodeServer is the server API for P2PNode service.
 // All implementations must embed UnimplementedP2PNodeServer
 // for forward compatibility.
@@ -191,6 +203,7 @@ type P2PNodeServer interface {
 	AcceptFile(*AcceptFileRequest, grpc.ServerStreamingServer[TransferEvent]) error
 	CancelTransfer(context.Context, *CancelTransferRequest) (*CancelTransferResponse, error)
 	GetTransferStatus(context.Context, *GetTransferStatusRequest) (*TransferStatusResponse, error)
+	RequestFile(context.Context, *RequestFileRequest) (*RequestFileResponse, error)
 	mustEmbedUnimplementedP2PNodeServer()
 }
 
@@ -227,6 +240,9 @@ func (UnimplementedP2PNodeServer) CancelTransfer(context.Context, *CancelTransfe
 }
 func (UnimplementedP2PNodeServer) GetTransferStatus(context.Context, *GetTransferStatusRequest) (*TransferStatusResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetTransferStatus not implemented")
+}
+func (UnimplementedP2PNodeServer) RequestFile(context.Context, *RequestFileRequest) (*RequestFileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RequestFile not implemented")
 }
 func (UnimplementedP2PNodeServer) mustEmbedUnimplementedP2PNodeServer() {}
 func (UnimplementedP2PNodeServer) testEmbeddedByValue()                 {}
@@ -390,6 +406,24 @@ func _P2PNode_GetTransferStatus_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _P2PNode_RequestFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(P2PNodeServer).RequestFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: P2PNode_RequestFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(P2PNodeServer).RequestFile(ctx, req.(*RequestFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // P2PNode_ServiceDesc is the grpc.ServiceDesc for P2PNode service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -420,6 +454,10 @@ var P2PNode_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTransferStatus",
 			Handler:    _P2PNode_GetTransferStatus_Handler,
+		},
+		{
+			MethodName: "RequestFile",
+			Handler:    _P2PNode_RequestFile_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

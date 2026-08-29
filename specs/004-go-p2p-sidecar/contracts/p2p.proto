@@ -21,6 +21,7 @@ service P2PNode {
   rpc AcceptFile(AcceptFileRequest) returns (stream TransferEvent);
   rpc CancelTransfer(CancelTransferRequest) returns (CancelTransferResponse);
   rpc GetTransferStatus(GetTransferStatusRequest) returns (TransferStatusResponse);
+  rpc RequestFile(RequestFileRequest) returns (RequestFileResponse);
 }
 
 // --- Enums ---
@@ -53,6 +54,7 @@ enum EventType {
   EVENT_TRANSFER_COMPLETED = 8;
   EVENT_TRANSFER_FAILED = 9;
   EVENT_TRANSFER_CANCELLED = 10;
+  EVENT_FILE_REQUESTED = 11;
 }
 
 // --- Messages ---
@@ -168,3 +170,13 @@ message TransferStatusResponse {
   int64 bytes_transferred = 3;
   int64 total_bytes = 4;
 }
+
+message RequestFileRequest {
+  string peer_id = 1;
+  string file_name = 2;
+}
+
+message RequestFileResponse {
+  bool success = 1;
+}
+

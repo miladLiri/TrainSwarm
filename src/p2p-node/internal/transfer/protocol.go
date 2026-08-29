@@ -16,12 +16,17 @@ import (
 )
 
 const ProtocolID = "/trainswarm/file/1.0.0"
+const RequestProtocolID = "/trainswarm/request/1.0.0"
 
 // Wire Messages
 type TransferRequest struct {
 	FileName string `json:"file_name"`
 	FileSize int64  `json:"file_size"`
 	SHA256   string `json:"sha256"`
+}
+
+type RequestWireMsg struct {
+	FileName string `json:"file_name"`
 }
 
 type TransferResponse struct {
@@ -56,6 +61,7 @@ func NewManager(h host.Host, eventCb func(*p2pv1.NodeEvent)) *Manager {
 		EventCallback:    eventCb,
 	}
 	h.SetStreamHandler(ProtocolID, m.handleIncomingStream)
+	h.SetStreamHandler(RequestProtocolID, m.handleFileRequestStream)
 	return m
 }
 
@@ -364,3 +370,30 @@ func (m *Manager) SendFile(ctx context.Context, p peer.ID, transferID, sourcePat
 
 	return nil
 }
+
+func (m *Manager) handleFileRequestStream(s network.Stream) {
+	defer s.Close()
+
+	var req RequestWireMsg
+	if err := json.NewDecoder(s).Decode(&req); err != nil {
+		return
+	}
+
+	m.EventCallback(&p2pv1.NodeEvent{
+		Type: p2pv1.EventType_EVENT_FILE_REQUESTED,
+		PeerId: s.Conn().RemotePeer().String(),
+		Message: req.FileName,
+	})
+}
+
+func (m *Manager) RequestFile(ctx context.Context, p peer.ID, fileName string) error {
+	s, err := m.host.NewStream(ctx, p, RequestProtocolID)
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+
+	msg := RequestWireMsg{FileName: fileName}
+	return json.NewEncoder(s).Encode(msg)
+}
+

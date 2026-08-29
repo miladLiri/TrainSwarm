@@ -219,3 +219,18 @@ func (s *Server) WatchEvents(req *p2pv1.WatchEventsRequest, stream p2pv1.P2PNode
 		}
 	}
 }
+
+func (s *Server) RequestFile(ctx context.Context, req *p2pv1.RequestFileRequest) (*p2pv1.RequestFileResponse, error) {
+	p, err := peer.Decode(req.PeerId)
+	if err != nil {
+		return nil, fmt.Errorf("invalid peer id: %w", err)
+	}
+
+	err = s.transferManager.RequestFile(ctx, p, req.FileName)
+	if err != nil {
+		return nil, err
+	}
+
+	return &p2pv1.RequestFileResponse{Success: true}, nil
+}
+

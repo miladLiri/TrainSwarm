@@ -145,6 +145,7 @@ const (
 	EventType_EVENT_TRANSFER_COMPLETED            EventType = 8
 	EventType_EVENT_TRANSFER_FAILED               EventType = 9
 	EventType_EVENT_TRANSFER_CANCELLED            EventType = 10
+	EventType_EVENT_FILE_REQUESTED                EventType = 11
 )
 
 // Enum value maps for EventType.
@@ -161,6 +162,7 @@ var (
 		8:  "EVENT_TRANSFER_COMPLETED",
 		9:  "EVENT_TRANSFER_FAILED",
 		10: "EVENT_TRANSFER_CANCELLED",
+		11: "EVENT_FILE_REQUESTED",
 	}
 	EventType_value = map[string]int32{
 		"EVENT_UNKNOWN":                       0,
@@ -174,6 +176,7 @@ var (
 		"EVENT_TRANSFER_COMPLETED":            8,
 		"EVENT_TRANSFER_FAILED":               9,
 		"EVENT_TRANSFER_CANCELLED":            10,
+		"EVENT_FILE_REQUESTED":                11,
 	}
 )
 
@@ -1317,6 +1320,102 @@ func (x *TransferStatusResponse) GetTotalBytes() int64 {
 	return 0
 }
 
+type RequestFileRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PeerId        string                 `protobuf:"bytes,1,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
+	FileName      string                 `protobuf:"bytes,2,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RequestFileRequest) Reset() {
+	*x = RequestFileRequest{}
+	mi := &file_p2p_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RequestFileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RequestFileRequest) ProtoMessage() {}
+
+func (x *RequestFileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RequestFileRequest.ProtoReflect.Descriptor instead.
+func (*RequestFileRequest) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *RequestFileRequest) GetPeerId() string {
+	if x != nil {
+		return x.PeerId
+	}
+	return ""
+}
+
+func (x *RequestFileRequest) GetFileName() string {
+	if x != nil {
+		return x.FileName
+	}
+	return ""
+}
+
+type RequestFileResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RequestFileResponse) Reset() {
+	*x = RequestFileResponse{}
+	mi := &file_p2p_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RequestFileResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RequestFileResponse) ProtoMessage() {}
+
+func (x *RequestFileResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RequestFileResponse.ProtoReflect.Descriptor instead.
+func (*RequestFileResponse) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *RequestFileResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
 var File_p2p_proto protoreflect.FileDescriptor
 
 const file_p2p_proto_rawDesc = "" +
@@ -1410,7 +1509,12 @@ const file_p2p_proto_rawDesc = "" +
 	"\x05state\x18\x02 \x01(\x0e2\x11.p2p.v1.EventTypeR\x05state\x12+\n" +
 	"\x11bytes_transferred\x18\x03 \x01(\x03R\x10bytesTransferred\x12\x1f\n" +
 	"\vtotal_bytes\x18\x04 \x01(\x03R\n" +
-	"totalBytes*x\n" +
+	"totalBytes\"J\n" +
+	"\x12RequestFileRequest\x12\x17\n" +
+	"\apeer_id\x18\x01 \x01(\tR\x06peerId\x12\x1b\n" +
+	"\tfile_name\x18\x02 \x01(\tR\bfileName\"/\n" +
+	"\x13RequestFileResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess*x\n" +
 	"\fReachability\x12\x18\n" +
 	"\x14REACHABILITY_UNKNOWN\x10\x00\x12\x17\n" +
 	"\x13REACHABILITY_PUBLIC\x10\x01\x12\x18\n" +
@@ -1422,7 +1526,7 @@ const file_p2p_proto_rawDesc = "" +
 	"\x15STATE_RELAY_CONNECTED\x10\x02\x12\x12\n" +
 	"\x0eSTATE_PUNCHING\x10\x03\x12\x1a\n" +
 	"\x16STATE_DIRECT_CONNECTED\x10\x04\x12\x10\n" +
-	"\fSTATE_FAILED\x10\x05*\xc9\x02\n" +
+	"\fSTATE_FAILED\x10\x05*\xe3\x02\n" +
 	"\tEventType\x12\x11\n" +
 	"\rEVENT_UNKNOWN\x10\x00\x12\x18\n" +
 	"\x14EVENT_PEER_CONNECTED\x10\x01\x12\x1b\n" +
@@ -1435,7 +1539,8 @@ const file_p2p_proto_rawDesc = "" +
 	"\x18EVENT_TRANSFER_COMPLETED\x10\b\x12\x19\n" +
 	"\x15EVENT_TRANSFER_FAILED\x10\t\x12\x1c\n" +
 	"\x18EVENT_TRANSFER_CANCELLED\x10\n" +
-	"2\x9a\x05\n" +
+	"\x12\x18\n" +
+	"\x14EVENT_FILE_REQUESTED\x10\v2\xe2\x05\n" +
 	"\aP2PNode\x12F\n" +
 	"\vGetNodeInfo\x12\x1a.p2p.v1.GetNodeInfoRequest\x1a\x1b.p2p.v1.GetNodeInfoResponse\x12:\n" +
 	"\aConnect\x12\x16.p2p.v1.ConnectRequest\x1a\x17.p2p.v1.ConnectResponse\x12C\n" +
@@ -1447,7 +1552,8 @@ const file_p2p_proto_rawDesc = "" +
 	"\n" +
 	"AcceptFile\x12\x19.p2p.v1.AcceptFileRequest\x1a\x15.p2p.v1.TransferEvent0\x01\x12O\n" +
 	"\x0eCancelTransfer\x12\x1d.p2p.v1.CancelTransferRequest\x1a\x1e.p2p.v1.CancelTransferResponse\x12U\n" +
-	"\x11GetTransferStatus\x12 .p2p.v1.GetTransferStatusRequest\x1a\x1e.p2p.v1.TransferStatusResponseB\x14Z\x12internal/api/p2pv1b\x06proto3"
+	"\x11GetTransferStatus\x12 .p2p.v1.GetTransferStatusRequest\x1a\x1e.p2p.v1.TransferStatusResponse\x12F\n" +
+	"\vRequestFile\x12\x1a.p2p.v1.RequestFileRequest\x1a\x1b.p2p.v1.RequestFileResponseB\x14Z\x12internal/api/p2pv1b\x06proto3"
 
 var (
 	file_p2p_proto_rawDescOnce sync.Once
@@ -1462,7 +1568,7 @@ func file_p2p_proto_rawDescGZIP() []byte {
 }
 
 var file_p2p_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_p2p_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_p2p_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_p2p_proto_goTypes = []any{
 	(Reachability)(0),                   // 0: p2p.v1.Reachability
 	(ConnectionState)(0),                // 1: p2p.v1.ConnectionState
@@ -1485,6 +1591,8 @@ var file_p2p_proto_goTypes = []any{
 	(*CancelTransferResponse)(nil),      // 18: p2p.v1.CancelTransferResponse
 	(*GetTransferStatusRequest)(nil),    // 19: p2p.v1.GetTransferStatusRequest
 	(*TransferStatusResponse)(nil),      // 20: p2p.v1.TransferStatusResponse
+	(*RequestFileRequest)(nil),          // 21: p2p.v1.RequestFileRequest
+	(*RequestFileResponse)(nil),         // 22: p2p.v1.RequestFileResponse
 }
 var file_p2p_proto_depIdxs = []int32{
 	0,  // 0: p2p.v1.GetNodeInfoResponse.reachability:type_name -> p2p.v1.Reachability
@@ -1503,17 +1611,19 @@ var file_p2p_proto_depIdxs = []int32{
 	15, // 13: p2p.v1.P2PNode.AcceptFile:input_type -> p2p.v1.AcceptFileRequest
 	17, // 14: p2p.v1.P2PNode.CancelTransfer:input_type -> p2p.v1.CancelTransferRequest
 	19, // 15: p2p.v1.P2PNode.GetTransferStatus:input_type -> p2p.v1.GetTransferStatusRequest
-	4,  // 16: p2p.v1.P2PNode.GetNodeInfo:output_type -> p2p.v1.GetNodeInfoResponse
-	6,  // 17: p2p.v1.P2PNode.Connect:output_type -> p2p.v1.ConnectResponse
-	8,  // 18: p2p.v1.P2PNode.Disconnect:output_type -> p2p.v1.DisconnectResponse
-	10, // 19: p2p.v1.P2PNode.GetConnectionStatus:output_type -> p2p.v1.GetConnectionStatusResponse
-	12, // 20: p2p.v1.P2PNode.WatchEvents:output_type -> p2p.v1.NodeEvent
-	16, // 21: p2p.v1.P2PNode.SendFile:output_type -> p2p.v1.TransferEvent
-	16, // 22: p2p.v1.P2PNode.AcceptFile:output_type -> p2p.v1.TransferEvent
-	18, // 23: p2p.v1.P2PNode.CancelTransfer:output_type -> p2p.v1.CancelTransferResponse
-	20, // 24: p2p.v1.P2PNode.GetTransferStatus:output_type -> p2p.v1.TransferStatusResponse
-	16, // [16:25] is the sub-list for method output_type
-	7,  // [7:16] is the sub-list for method input_type
+	21, // 16: p2p.v1.P2PNode.RequestFile:input_type -> p2p.v1.RequestFileRequest
+	4,  // 17: p2p.v1.P2PNode.GetNodeInfo:output_type -> p2p.v1.GetNodeInfoResponse
+	6,  // 18: p2p.v1.P2PNode.Connect:output_type -> p2p.v1.ConnectResponse
+	8,  // 19: p2p.v1.P2PNode.Disconnect:output_type -> p2p.v1.DisconnectResponse
+	10, // 20: p2p.v1.P2PNode.GetConnectionStatus:output_type -> p2p.v1.GetConnectionStatusResponse
+	12, // 21: p2p.v1.P2PNode.WatchEvents:output_type -> p2p.v1.NodeEvent
+	16, // 22: p2p.v1.P2PNode.SendFile:output_type -> p2p.v1.TransferEvent
+	16, // 23: p2p.v1.P2PNode.AcceptFile:output_type -> p2p.v1.TransferEvent
+	18, // 24: p2p.v1.P2PNode.CancelTransfer:output_type -> p2p.v1.CancelTransferResponse
+	20, // 25: p2p.v1.P2PNode.GetTransferStatus:output_type -> p2p.v1.TransferStatusResponse
+	22, // 26: p2p.v1.P2PNode.RequestFile:output_type -> p2p.v1.RequestFileResponse
+	17, // [17:27] is the sub-list for method output_type
+	7,  // [7:17] is the sub-list for method input_type
 	7,  // [7:7] is the sub-list for extension type_name
 	7,  // [7:7] is the sub-list for extension extendee
 	0,  // [0:7] is the sub-list for field type_name
@@ -1530,7 +1640,7 @@ func file_p2p_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_p2p_proto_rawDesc), len(file_p2p_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   18,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

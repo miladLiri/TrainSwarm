@@ -15,27 +15,27 @@ $sampleContent = "Hello from Node A! This is a P2P file transfer test across sim
 Set-Content -Path "test_file.txt" -Value $sampleContent
 if (Test-Path "received_test_file.txt") { Remove-Item "received_test_file.txt" }
 
-# 1. Run Sender (Node A)
-Write-Host "`n[1/3] Starting Sender (Node A) in background..."
-$senderJob = Start-Job -ScriptBlock {
-    param($dir, $peerId)
+# 1. Run Owner (Node A)
+Write-Host "`n[1/3] Starting Owner (Node A) in background..."
+$ownerJob = Start-Job -ScriptBlock {
+    param($dir)
     Set-Location $dir
     .\venv\Scripts\Activate.ps1
-    python sender.py 50051 $peerId "test_file.txt" "localhost"
-} -ArgumentList $ScriptDir, $PeerId
+    python owner.py 50051 "test_file.txt"
+} -ArgumentList $ScriptDir
 
-# Give the sender a moment to initiate the connection
+# Give the owner a moment to start
 Start-Sleep -Seconds 2
 
-# 2. Run Receiver (Node B)
-Write-Host "`n[2/3] Starting Receiver (Node B)..."
-python receiver.py 50052
+# 2. Run Requester (Node B)
+Write-Host "`n[2/3] Starting Requester (Node B)..."
+python requester.py 50052 $PeerId "test_file.txt" "localhost"
 
-Write-Host "`n[3/3] Waiting for sender to finish..."
-Receive-Job $senderJob -Wait
+Write-Host "`n[3/3] Waiting for owner to finish..."
+Receive-Job $ownerJob -Wait
 
-Write-Host "`n--- Sender Logs ---"
-Receive-Job $senderJob
+Write-Host "`n--- Owner Logs ---"
+Receive-Job $ownerJob
 
 # Verify
 if (Test-Path "received_test_file.txt") {
