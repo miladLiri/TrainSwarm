@@ -118,6 +118,7 @@ func (s *Server) Disconnect(ctx context.Context, req *p2pv1.DisconnectRequest) (
 }
 
 func (s *Server) SendFile(req *p2pv1.SendFileRequest, stream p2pv1.P2PNode_SendFileServer) error {
+	fmt.Printf("[gRPC API] SendFile: Peer=%s, File=%s\n", req.PeerId, req.SourcePath)
 	pid, err := peer.Decode(req.PeerId)
 	if err != nil {
 		return fmt.Errorf("invalid peer ID: %w", err)
@@ -126,15 +127,7 @@ func (s *Server) SendFile(req *p2pv1.SendFileRequest, stream p2pv1.P2PNode_SendF
 	progressCh := make(chan *p2pv1.TransferEvent, 100)
 	
 	go func() {
-		err := s.transferManager.SendFile(stream.Context(), pid, req.TransferId, req.SourcePath, req.FileName, req.FileSize, req.Sha256, progressCh)
-		if err != nil {
-			progressCh <- &p2pv1.TransferEvent{
-				TransferId: req.TransferId,
-				State:      p2pv1.EventType_EVENT_TRANSFER_FAILED,
-				Error:      err.Error(),
-			}
-			close(progressCh)
-		}
+		s.transferManager.SendFile(stream.Context(), pid, req.TransferId, req.SourcePath, req.FileName, req.FileSize, req.Sha256, progressCh)
 	}()
 
 	for ev := range progressCh {

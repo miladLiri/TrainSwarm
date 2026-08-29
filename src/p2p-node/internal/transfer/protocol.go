@@ -274,12 +274,14 @@ func (m *Manager) SendFile(ctx context.Context, p peer.ID, transferID, sourcePat
 
 	f, err := os.Open(sourcePath)
 	if err != nil {
+		progress <- &p2pv1.TransferEvent{TransferId: transferID, State: p2pv1.EventType_EVENT_TRANSFER_FAILED, Error: err.Error()}
 		return fmt.Errorf("failed to open source file: %w", err)
 	}
 	defer f.Close()
 
 	s, err := m.host.NewStream(ctx, p, ProtocolID)
 	if err != nil {
+		progress <- &p2pv1.TransferEvent{TransferId: transferID, State: p2pv1.EventType_EVENT_TRANSFER_FAILED, Error: err.Error()}
 		return fmt.Errorf("failed to open stream: %w", err)
 	}
 	defer s.Close()
@@ -397,8 +399,11 @@ func (m *Manager) RequestFile(ctx context.Context, p peer.ID, fileName string) e
 		return err
 	}
 	defer s.Close()
+	fmt.Printf("[Transfer Manager] Successfully opened Request stream to %s\n", p.String())
 
 	msg := RequestWireMsg{FileName: fileName}
-	return json.NewEncoder(s).Encode(msg)
+	err = json.NewEncoder(s).Encode(msg)
+	fmt.Printf("[Transfer Manager] Sent file request message: %v\n", err)
+	return err
 }
 

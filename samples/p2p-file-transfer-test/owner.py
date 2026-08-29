@@ -41,7 +41,7 @@ def run():
                     try:
                         transfer_stream = stub.SendFile(p2p_pb2.SendFileRequest(
                             peer_id=event.peer_id,
-                            file_path=file_path
+                            source_path=file_path
                         ))
                         for progress in transfer_stream:
                             print(f"[Owner] Upload Progress: {progress.bytes_transferred} bytes")
