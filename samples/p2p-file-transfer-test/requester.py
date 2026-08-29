@@ -34,8 +34,8 @@ def run():
     try:
         stub.Connect(p2p_pb2.ConnectRequest(
             peer_id=owner_peer_id,
-            addresses=[relay_addr],
-            timeout_seconds=30
+            multiaddrs=[relay_addr],
+            timeout_ms=30000
         ))
     except grpc.RpcError as e:
         print(f"[Requester] Failed to connect: {e}")
