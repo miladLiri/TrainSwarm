@@ -11,24 +11,31 @@ sys.stdout.reconfigure(line_buffering=True)
 
 def run():
     if len(sys.argv) < 5:
-        print("Usage: python requester.py <port> <owner_peer_id> <file_name> <relay_host>")
+        print("Usage: python requester.py <port> <owner_peer_id> <file_name> <relay_http_host> [relay_p2p_host]")
+        print("  relay_http_host  - hostname to fetch relay peer ID via HTTP (e.g. localhost)")
+        print("  relay_p2p_host   - hostname the Go node uses to dial the relay (e.g. 'relay' for Docker). Defaults to relay_http_host.")
         sys.exit(1)
-        
+
     port = sys.argv[1]
     owner_peer_id = sys.argv[2]
     file_name = sys.argv[3]
-    relay_host = sys.argv[4]
-    
-    print(f"[Requester] Fetching relay peer ID from http://{relay_host}:8090/peerid...")
-    req = urllib.request.urlopen(f"http://{relay_host}:8090/peerid")
+    relay_http_host = sys.argv[4]
+    # relay_p2p_host is the hostname that the Go node (inside Docker) uses to reach the relay.
+    # When running in Docker, this must be the Docker service name "relay", not "localhost".
+    relay_p2p_host = sys.argv[5] if len(sys.argv) >= 6 else relay_http_host
+
+    print(f"[Requester] Fetching relay peer ID from http://{relay_http_host}:8090/peerid...")
+    req = urllib.request.urlopen(f"http://{relay_http_host}:8090/peerid")
     relay_peer_id = req.read().decode('utf-8').strip()
-    
+    print(f"[Requester] Relay peer ID: {relay_peer_id}")
+
     channel = grpc.insecure_channel(f'localhost:{port}')
     stub = p2p_pb2_grpc.P2PNodeStub(channel)
-    
+
     print(f"[Requester] Connected to Node gRPC on localhost:{port}")
-    
-    relay_addr = f"/dns4/{relay_host}/tcp/4001/p2p/{relay_peer_id}/p2p-circuit/p2p/{owner_peer_id}"
+
+    # Build the circuit relay address using the P2P hostname (resolvable from inside Docker)
+    relay_addr = f"/dns4/{relay_p2p_host}/tcp/4001/p2p/{relay_peer_id}/p2p-circuit/p2p/{owner_peer_id}"
     print(f"[Requester] Connecting to Owner via relay circuit: {relay_addr}")
     
     try:

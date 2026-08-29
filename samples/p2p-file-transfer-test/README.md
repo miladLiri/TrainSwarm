@@ -46,10 +46,15 @@ python owner.py 50051 /tmp/test_file.txt
 **Important:** The script will output Node A's `Node ID` (Peer ID). Copy this ID for the next step. Leave this script running.
 
 ### Step 3: Start the Requester (Node B)
-In another terminal (with the virtual environment activated), run the requester script to instruct Node B to dial Node A and pull the file. Replace `<node-a-owner-peer-id>` with the ID you copied above.
+In another terminal (with the virtual environment activated), run the requester script. Replace `<node-a-owner-peer-id>` with the Peer ID printed by the Owner script.
+
+The last two arguments are:
+- `localhost` — where your **host machine** fetches the relay's peer ID via HTTP (port 8090 is exposed).
+- `relay` — the Docker service name that **Node B's Go node** uses internally to dial the relay over the P2P network.
+
 ```powershell
 .\venv\Scripts\Activate.ps1
-python requester.py 50052 <node-a-owner-peer-id> test_file.txt localhost
+python requester.py 50052 <node-a-owner-peer-id> test_file.txt localhost relay
 ```
 
 ## How to Verify Success
