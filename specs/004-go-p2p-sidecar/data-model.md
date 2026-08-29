@@ -55,3 +55,4 @@ The data model for the Go P2P Sidecar focuses entirely on connection state manag
   - `TRANSFER_COMPLETED`
   - `TRANSFER_FAILED`
   - `TRANSFER_CANCELLED`
+  - `FILE_REQUESTED` (contains requested file name in message)

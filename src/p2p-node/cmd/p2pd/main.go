@@ -80,9 +80,10 @@ func main() {
 	}
 
 	if relayAddr != "" {
-		if err := node.ReserveRelaySlot(ctx, p2pNode.Host, relayAddr); err != nil {
+		if relayID, err := node.ReserveRelaySlot(ctx, p2pNode.Host, relayAddr); err != nil {
 			log.Printf("Warning: failed to reserve slot on relay %s: %v", relayAddr, err)
 		} else {
+			p2pNode.RelayPeerID = relayID
 			log.Printf("Successfully reserved slot on relay %s", relayAddr)
 		}
 	}

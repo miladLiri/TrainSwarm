@@ -13,7 +13,7 @@ Since Node A and Node B are on different networks, they cannot connect to each o
 
 The test runs two Python scripts on your host:
 - `owner.py`: Connects to Node A's gRPC API (`localhost:50051`), listens for requests, and pushes the requested file.
-- `requester.py`: Connects to Node B's gRPC API (`localhost:50052`), dials Node A (the owner) using its `/p2p-circuit` relay address, and requests a file.
+- `requester.py`: Connects to Node B's gRPC API (`localhost:50052`), connects to Node A (the owner) by peer ID (with Node B's Go node internally handling relay routing), and requests a file.
 
 Behind the scenes, `go-libp2p` orchestrates a DCUtR (Direct Connection Upgrade through Relay) hole punch. If successful, the connection is upgraded to direct P2P. If the simulated NAT is too restrictive, it falls back to streaming the file via the relay circuit.
 
@@ -48,13 +48,10 @@ python owner.py 50051 /tmp/test_file.txt
 ### Step 3: Start the Requester (Node B)
 In another terminal (with the virtual environment activated), run the requester script. Replace `<node-a-owner-peer-id>` with the Peer ID printed by the Owner script.
 
-The last two arguments are:
-- `localhost` — where your **host machine** fetches the relay's peer ID via HTTP (port 8090 is exposed).
-- `relay` — the Docker service name that **Node B's Go node** uses internally to dial the relay over the P2P network.
-
+The Go node already knows its relay (it connected at startup), so no relay address is needed here.
 ```powershell
 .\venv\Scripts\Activate.ps1
-python requester.py 50052 <node-a-owner-peer-id> test_file.txt localhost relay
+python requester.py 50052 <node-a-owner-peer-id> test_file.txt
 ```
 
 ## How to Verify Success

@@ -43,9 +43,9 @@ Subscribe to events on Node A to watch the connection upgrade process:
 grpcurl -plaintext localhost:9001 p2p.v1.P2PNode/WatchEvents
 ```
 
-In a new terminal, tell Node A to connect to Node B using Node B's relay address:
+In a new terminal, tell Node A to connect to Node B:
 ```bash
-grpcurl -plaintext -d '{"peer_id": "<NODE_B_PEER_ID>", "multiaddrs": ["<NODE_B_RELAY_ADDR>"]}' localhost:9001 p2p.v1.P2PNode/Connect
+grpcurl -plaintext -d '{"peer_id": "<NODE_B_PEER_ID>"}' localhost:9001 p2p.v1.P2PNode/Connect
 ```
 
 **Expected Event Output (Node A's WatchEvents stream):**

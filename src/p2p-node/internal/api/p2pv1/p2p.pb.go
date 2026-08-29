@@ -322,8 +322,7 @@ func (x *GetNodeInfoResponse) GetGrpcApiVersion() string {
 type ConnectRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	PeerId        string                 `protobuf:"bytes,1,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
-	Multiaddrs    []string               `protobuf:"bytes,2,rep,name=multiaddrs,proto3" json:"multiaddrs,omitempty"` // Can be direct or relay circuit multiaddrs
-	TimeoutMs     int32                  `protobuf:"varint,3,opt,name=timeout_ms,json=timeoutMs,proto3" json:"timeout_ms,omitempty"`
+	TimeoutMs     int32                  `protobuf:"varint,2,opt,name=timeout_ms,json=timeoutMs,proto3" json:"timeout_ms,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -363,13 +362,6 @@ func (x *ConnectRequest) GetPeerId() string {
 		return x.PeerId
 	}
 	return ""
-}
-
-func (x *ConnectRequest) GetMultiaddrs() []string {
-	if x != nil {
-		return x.Multiaddrs
-	}
-	return nil
 }
 
 func (x *ConnectRequest) GetTimeoutMs() int32 {
@@ -1427,14 +1419,11 @@ const file_p2p_proto_rawDesc = "" +
 	"\x10listen_addresses\x18\x02 \x03(\tR\x0flistenAddresses\x12'\n" +
 	"\x0frelay_addresses\x18\x03 \x03(\tR\x0erelayAddresses\x128\n" +
 	"\freachability\x18\x04 \x01(\x0e2\x14.p2p.v1.ReachabilityR\freachability\x12(\n" +
-	"\x10grpc_api_version\x18\x05 \x01(\tR\x0egrpcApiVersion\"h\n" +
+	"\x10grpc_api_version\x18\x05 \x01(\tR\x0egrpcApiVersion\"H\n" +
 	"\x0eConnectRequest\x12\x17\n" +
-	"\apeer_id\x18\x01 \x01(\tR\x06peerId\x12\x1e\n" +
+	"\apeer_id\x18\x01 \x01(\tR\x06peerId\x12\x1d\n" +
 	"\n" +
-	"multiaddrs\x18\x02 \x03(\tR\n" +
-	"multiaddrs\x12\x1d\n" +
-	"\n" +
-	"timeout_ms\x18\x03 \x01(\x05R\ttimeoutMs\"\xef\x01\n" +
+	"timeout_ms\x18\x02 \x01(\x05R\ttimeoutMs\"\xef\x01\n" +
 	"\x0fConnectResponse\x12#\n" +
 	"\rconnection_id\x18\x01 \x01(\tR\fconnectionId\x12\x17\n" +
 	"\apeer_id\x18\x02 \x01(\tR\x06peerId\x12-\n" +

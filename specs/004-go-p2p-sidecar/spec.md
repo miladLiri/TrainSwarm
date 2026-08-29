@@ -27,7 +27,7 @@ As a Python Application (Trainer or Client), I want the Go sidecar to establish 
 
 **Acceptance Scenarios**:
 
-1. **Given** two sidecars behind NATs and a configured public relay, **When** one sidecar calls `Connect` with the other's relay multiaddress, **Then** the sidecar initially connects via the relay and immediately coordinates a DCUtR hole punch to establish a direct connection, preferring it for all subsequent traffic.
+1. **Given** two sidecars behind NATs and a configured public relay, **When** one sidecar calls `Connect` with the other's peer ID, **Then** the sidecar connects via the relay and coordinates a DCUtR hole punch to establish a direct connection, preferring it for all subsequent traffic.
 2. **Given** a direct connection attempt fails, **When** the sidecar falls back to the relay, **Then** the connection is maintained via the relay and reported as `RELAY_CONNECTED` to the Python application.
 
 ---
@@ -108,7 +108,7 @@ As a Python Application Developer, I want to interact with the P2P sidecar exclu
 
 ## Assumptions
 
-- The Python application is responsible for application-level signaling (e.g., discovering the remote `peer_id` and relay multiaddress via the Coordinator/Bootstrap nodes).
+- The Python application is responsible for application-level signaling (e.g., discovering the remote `peer_id` via the Coordinator/Bootstrap nodes).
 - The Bootstrap server runs a compatible libp2p Circuit Relay v2 server.
 - The target environment supports spawning child processes (Go executable) from the Python host application.
 - The machine running the sidecar is considered trusted; the `127.0.0.1` gRPC API requires no explicit authentication token to accept commands.

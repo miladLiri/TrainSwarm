@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"p2p-node/internal/api"
 	"p2p-node/internal/node"
 )
 

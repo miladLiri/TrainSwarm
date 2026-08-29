@@ -13,24 +13,24 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/client"
 )
 
-func ReserveRelaySlot(ctx context.Context, h host.Host, relayAddr string) error {
+func ReserveRelaySlot(ctx context.Context, h host.Host, relayAddr string) (peer.ID, error) {
 	ma, err := multiaddr.NewMultiaddr(relayAddr)
 	if err != nil {
-		return fmt.Errorf("invalid relay multiaddr: %w", err)
+		return "", fmt.Errorf("invalid relay multiaddr: %w", err)
 	}
 
 	relayInfo, err := peer.AddrInfoFromP2pAddr(ma)
 	if err != nil {
-		return fmt.Errorf("invalid relay AddrInfo: %w", err)
+		return "", fmt.Errorf("invalid relay AddrInfo: %w", err)
 	}
 
 	if err := h.Connect(ctx, *relayInfo); err != nil {
-		return fmt.Errorf("failed to connect to relay: %w", err)
+		return "", fmt.Errorf("failed to connect to relay: %w", err)
 	}
 
 	reservation, err := client.Reserve(ctx, h, *relayInfo)
 	if err != nil {
-		return fmt.Errorf("failed to reserve slot: %w", err)
+		return "", fmt.Errorf("failed to reserve slot: %w", err)
 	}
 
 	// Simple background refresh
@@ -50,12 +50,13 @@ func ReserveRelaySlot(ctx context.Context, h host.Host, relayAddr string) error 
 		}
 	}()
 
-	return nil
+	return relayInfo.ID, nil
 }
 
 // Node represents the P2P sidecar node.
 type Node struct {
-	Host host.Host
+	Host        host.Host
+	RelayPeerID peer.ID // peer ID of the relay this node is connected to, if any
 }
 
 // NewNode creates a new libp2p host with the given private key and port.

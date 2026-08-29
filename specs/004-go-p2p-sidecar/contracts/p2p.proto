@@ -71,8 +71,7 @@ message GetNodeInfoResponse {
 
 message ConnectRequest {
   string peer_id = 1;
-  repeated string multiaddrs = 2; // Can be direct or relay circuit multiaddrs
-  int32 timeout_ms = 3;
+  int32 timeout_ms = 2;
 }
 
 message ConnectResponse {
@@ -179,4 +178,3 @@ message RequestFileRequest {
 message RequestFileResponse {
   bool success = 1;
 }
-

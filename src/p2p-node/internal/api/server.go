@@ -54,26 +54,46 @@ func (s *Server) GetNodeInfo(ctx context.Context, req *p2pv1.GetNodeInfoRequest)
 		listenAddrs = append(listenAddrs, addr.String())
 	}
 
+	var relayAddrs []string
+	if s.node.RelayPeerID != "" {
+		relayAddrs = append(relayAddrs, fmt.Sprintf("/p2p/%s/p2p-circuit/p2p/%s", s.node.RelayPeerID, s.node.Host.ID().String()))
+	}
+
 	return &p2pv1.GetNodeInfoResponse{
-		PeerId:         s.node.Host.ID().String(),
+		PeerId:          s.node.Host.ID().String(),
 		ListenAddresses: listenAddrs,
-		Reachability:   p2pv1.Reachability_REACHABILITY_UNKNOWN,
-		GrpcApiVersion: "v1",
+		RelayAddresses:  relayAddrs,
+		Reachability:    p2pv1.Reachability_REACHABILITY_UNKNOWN,
+		GrpcApiVersion:  "v1",
 	}, nil
 }
 
+func (s *Server) ensurePeerAddr(pid peer.ID) {
+	if s.node.RelayPeerID != "" && len(s.node.Host.Peerstore().Addrs(pid)) == 0 {
+		circuitAddr, err := multiaddr.NewMultiaddr(
+			fmt.Sprintf("/p2p/%s/p2p-circuit/p2p/%s", s.node.RelayPeerID, pid),
+		)
+		if err == nil {
+			s.node.Host.Peerstore().AddAddr(pid, circuitAddr, time.Hour)
+		}
+	}
+}
+
 func (s *Server) Connect(ctx context.Context, req *p2pv1.ConnectRequest) (*p2pv1.ConnectResponse, error) {
-	fmt.Printf("[gRPC API] Connect: Peer=%s, Multiaddrs=%v\n", req.PeerId, req.Multiaddrs)
+	fmt.Printf("[gRPC API] Connect: Peer=%s\n", req.PeerId)
 	pid, err := peer.Decode(req.PeerId)
 	if err != nil {
 		return nil, fmt.Errorf("invalid peer ID: %w", err)
 	}
 
 	var maddrs []multiaddr.Multiaddr
-	for _, a := range req.Multiaddrs {
-		ma, err := multiaddr.NewMultiaddr(a)
+	if s.node.RelayPeerID != "" {
+		circuitAddr, err := multiaddr.NewMultiaddr(
+			fmt.Sprintf("/p2p/%s/p2p-circuit/p2p/%s", s.node.RelayPeerID, pid),
+		)
 		if err == nil {
-			maddrs = append(maddrs, ma)
+			fmt.Printf("[gRPC API] Connect: Routing via internal relay circuit: %s\n", circuitAddr)
+			maddrs = append(maddrs, circuitAddr)
 		}
 	}
 
@@ -123,6 +143,8 @@ func (s *Server) SendFile(req *p2pv1.SendFileRequest, stream p2pv1.P2PNode_SendF
 	if err != nil {
 		return fmt.Errorf("invalid peer ID: %w", err)
 	}
+
+	s.ensurePeerAddr(pid)
 
 	progressCh := make(chan *p2pv1.TransferEvent, 100)
 	
@@ -219,6 +241,8 @@ func (s *Server) RequestFile(ctx context.Context, req *p2pv1.RequestFileRequest)
 	if err != nil {
 		return nil, fmt.Errorf("invalid peer id: %w", err)
 	}
+
+	s.ensurePeerAddr(p)
 
 	err = s.transferManager.RequestFile(ctx, p, req.FileName)
 	if err != nil {
