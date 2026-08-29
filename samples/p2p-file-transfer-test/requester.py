@@ -41,7 +41,8 @@ def run():
         print(f"[Requester] Failed to connect: {e}")
         return
 
-    time.sleep(2)
+    # Wait for connection stabilization and hole-punch
+    time.sleep(10)
     
     def watch_events():
         try:
@@ -73,7 +74,7 @@ def run():
         stub.RequestFile(p2p_pb2.RequestFileRequest(
             peer_id=owner_peer_id,
             file_name=file_name
-        ))
+        ), timeout=30)
     except grpc.RpcError as e:
         print(f"[Requester] Failed to request file: {e}")
 

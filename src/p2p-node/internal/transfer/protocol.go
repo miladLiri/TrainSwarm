@@ -376,8 +376,11 @@ func (m *Manager) handleFileRequestStream(s network.Stream) {
 
 	var req RequestWireMsg
 	if err := json.NewDecoder(s).Decode(&req); err != nil {
+		fmt.Printf("[Transfer Manager] Failed to decode RequestWireMsg: %v\n", err)
 		return
 	}
+
+	fmt.Printf("[Transfer Manager] Received file request for '%s' from peer %s\n", req.FileName, s.Conn().RemotePeer())
 
 	m.EventCallback(&p2pv1.NodeEvent{
 		Type: p2pv1.EventType_EVENT_FILE_REQUESTED,
@@ -387,8 +390,10 @@ func (m *Manager) handleFileRequestStream(s network.Stream) {
 }
 
 func (m *Manager) RequestFile(ctx context.Context, p peer.ID, fileName string) error {
+	fmt.Printf("[Transfer Manager] Dialing peer %s to request file '%s'\n", p.String(), fileName)
 	s, err := m.host.NewStream(ctx, p, RequestProtocolID)
 	if err != nil {
+		fmt.Printf("[Transfer Manager] NewStream failed: %v\n", err)
 		return err
 	}
 	defer s.Close()

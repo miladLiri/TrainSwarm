@@ -63,6 +63,7 @@ func (s *Server) GetNodeInfo(ctx context.Context, req *p2pv1.GetNodeInfoRequest)
 }
 
 func (s *Server) Connect(ctx context.Context, req *p2pv1.ConnectRequest) (*p2pv1.ConnectResponse, error) {
+	fmt.Printf("[gRPC API] Connect: Peer=%s, Multiaddrs=%v\n", req.PeerId, req.Multiaddrs)
 	pid, err := peer.Decode(req.PeerId)
 	if err != nil {
 		return nil, fmt.Errorf("invalid peer ID: %w", err)
@@ -233,4 +234,3 @@ func (s *Server) RequestFile(ctx context.Context, req *p2pv1.RequestFileRequest)
 
 	return &p2pv1.RequestFileResponse{Success: true}, nil
 }
-
