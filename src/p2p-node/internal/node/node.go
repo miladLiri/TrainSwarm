@@ -73,6 +73,8 @@ func NewNode(ctx context.Context, priv crypto.PrivKey, port int) (*Node, error) 
 		libp2p.DefaultTransports,
 		libp2p.DefaultSecurity,
 		libp2p.DefaultMuxers,
+		// Enable Relay (Circuit Relay v2 client)
+		libp2p.EnableRelay(),
 		// NATPortMap attempts to open ports using UPnP/NAT-PMP
 		libp2p.NATPortMap(),
 		// Enable AutoNAT as a client

@@ -71,7 +71,7 @@ func (s *Server) GetNodeInfo(ctx context.Context, req *p2pv1.GetNodeInfoRequest)
 func (s *Server) ensurePeerAddr(pid peer.ID) {
 	if s.node.RelayPeerID != "" && len(s.node.Host.Peerstore().Addrs(pid)) == 0 {
 		circuitAddr, err := multiaddr.NewMultiaddr(
-			fmt.Sprintf("/p2p/%s/p2p-circuit/p2p/%s", s.node.RelayPeerID, pid),
+			fmt.Sprintf("/p2p/%s/p2p-circuit", s.node.RelayPeerID),
 		)
 		if err == nil {
 			s.node.Host.Peerstore().AddAddr(pid, circuitAddr, time.Hour)
@@ -89,7 +89,7 @@ func (s *Server) Connect(ctx context.Context, req *p2pv1.ConnectRequest) (*p2pv1
 	var maddrs []multiaddr.Multiaddr
 	if s.node.RelayPeerID != "" {
 		circuitAddr, err := multiaddr.NewMultiaddr(
-			fmt.Sprintf("/p2p/%s/p2p-circuit/p2p/%s", s.node.RelayPeerID, pid),
+			fmt.Sprintf("/p2p/%s/p2p-circuit", s.node.RelayPeerID),
 		)
 		if err == nil {
 			fmt.Printf("[gRPC API] Connect: Routing via internal relay circuit: %s\n", circuitAddr)

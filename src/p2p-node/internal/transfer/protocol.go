@@ -279,7 +279,7 @@ func (m *Manager) SendFile(ctx context.Context, p peer.ID, transferID, sourcePat
 	}
 	defer f.Close()
 
-	s, err := m.host.NewStream(ctx, p, ProtocolID)
+	s, err := m.host.NewStream(network.WithUseTransient(ctx, "send-file"), p, ProtocolID)
 	if err != nil {
 		progress <- &p2pv1.TransferEvent{TransferId: transferID, State: p2pv1.EventType_EVENT_TRANSFER_FAILED, Error: err.Error()}
 		return fmt.Errorf("failed to open stream: %w", err)
@@ -384,16 +384,18 @@ func (m *Manager) handleFileRequestStream(s network.Stream) {
 
 	fmt.Printf("[Transfer Manager] Received file request for '%s' from peer %s\n", req.FileName, s.Conn().RemotePeer())
 
-	m.EventCallback(&p2pv1.NodeEvent{
-		Type: p2pv1.EventType_EVENT_FILE_REQUESTED,
-		PeerId: s.Conn().RemotePeer().String(),
-		Message: req.FileName,
-	})
+	if m.EventCallback != nil {
+		m.EventCallback(&p2pv1.NodeEvent{
+			Type: p2pv1.EventType_EVENT_FILE_REQUESTED,
+			PeerId: s.Conn().RemotePeer().String(),
+			Message: req.FileName,
+		})
+	}
 }
 
 func (m *Manager) RequestFile(ctx context.Context, p peer.ID, fileName string) error {
 	fmt.Printf("[Transfer Manager] Dialing peer %s to request file '%s'\n", p.String(), fileName)
-	s, err := m.host.NewStream(ctx, p, RequestProtocolID)
+	s, err := m.host.NewStream(network.WithUseTransient(ctx, "request-file"), p, RequestProtocolID)
 	if err != nil {
 		fmt.Printf("[Transfer Manager] NewStream failed: %v\n", err)
 		return err

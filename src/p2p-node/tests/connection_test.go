@@ -12,9 +12,9 @@ func TestConnection_E2E(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// 1. Create two nodes
-	privA, _ := node.LoadOrGenerateIdentity("temp_a.key")
-	privB, _ := node.LoadOrGenerateIdentity("temp_b.key")
+	tempDir := t.TempDir()
+	privA, _ := node.LoadOrGenerateIdentity(tempDir + "/temp_a.key")
+	privB, _ := node.LoadOrGenerateIdentity(tempDir + "/temp_b.key")
 
 	nodeA, _ := node.NewNode(ctx, privA, 0) // OS picks port
 	nodeB, _ := node.NewNode(ctx, privB, 0)
