@@ -23,15 +23,21 @@ Behind the scenes, `go-libp2p` orchestrates a DCUtR (Direct Connection Upgrade t
 
 ## How to Run
 
-Execute the test script from a PowerShell terminal:
+First, run the setup script to start the necessary Docker containers and compile the gRPC stubs:
 
 ```powershell
-.\run_test.ps1
+.\setup.ps1
+```
+
+Once the setup is complete, determine Node B's Peer ID (e.g. from the logs or other tools), and use it to run the transfer test:
+
+```powershell
+.\test_transfer.ps1 -PeerId <node-b-peer-id>
 ```
 
 If you want to keep the Docker containers running after the test to inspect logs manually:
 ```powershell
-.\run_test.ps1 -KeepEnv
+.\test_transfer.ps1 -PeerId <node-b-peer-id> -KeepEnv
 ```
 
 ## How to Verify Success
