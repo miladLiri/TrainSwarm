@@ -1,15 +1,15 @@
 <!-- Sync Impact Report
-Version: 4.0.0 -> 4.1.0
+Version: 4.1.0 -> 4.2.0
 Modified Principles:
-- V. Explicit Prohibitions & AI Guidelines (Added NO MOCKS prohibition)
+- IV. Engineering & Coding Standards (MVP Focus) (Added post-change verification rule)
 Added Sections:
-- VI. Real Functional Implementations (Zero Mocks)
+- VII. Verification, Compilability, and Executable Correctness (Mandatory Post-Change Quality Gate)
 Removed Sections:
 - (none)
 Deferred Items:
 - None
 Notes:
-- Added non-negotiable rule prohibiting mock, stub, or placeholder implementations across all features, infrastructure, modules, and APIs, strictly requiring real working functionality within specification scope.
+- Added non-negotiable principle requiring that after any code modification or feature implementation, the agent must verify build integrity (compilability), executability (runnability), and functional correctness through active execution before marking work complete.
 -->
 # TrainSwarm Constitution
 
@@ -72,6 +72,7 @@ optimization or over-design.
 - Security hardening beyond basic transport and input handling is NOT
   required at this stage.
 - Make failure states explicit and state transitions observable.
+- Every code modification MUST be actively tested for compilation and execution validity before concluding tasks.
 
 ### V. Explicit Prohibitions & AI Guidelines
 To maintain architecture integrity, the following are strictly
@@ -109,6 +110,13 @@ provide real, working functionality within the scope of its specification.
 - **Spec-Complete Deliverables:** Every task and deliverable must be fully
   functional in adherence to its design contract and specifications; partial
   scaffolding with fake behaviors is strictly unacceptable.
+
+### VII. Verification, Compilability, and Executable Correctness (Mandatory Post-Change Quality Gate)
+For every feature implemented and after every code modification, agents and developers MUST verify that the codebase compiles, runs cleanly, and produces correct results.
+- **Compilability (Build Integrity):** After modifying code, the agent MUST execute the relevant compiler, build, or syntax check commands (e.g., `go build ./...`, `dotnet build`, `python -m py_compile`) and confirm zero compilation or syntax errors.
+- **Executability (Runnability):** The agent MUST verify that modified services, scripts, or executables launch and execute without runtime panics, unhandled exceptions, or crash loops.
+- **Verification of Correctness:** The agent MUST actively inspect and confirm the correctness of outputs, communication streams, and returned data against specifications (via real command execution, CLI calls, or E2E validation) before considering an implementation complete.
+- **No Unverified Assumptions:** Code MUST NOT be declared functional based on visual inspection alone; concrete validation of build and execution correctness is mandatory.
 
 ## Architecture Boundaries & Service Definitions
 
@@ -165,4 +173,4 @@ repository.
 - **Production Assumptions:** Do NOT assume a finalized production
   deployment model at this stage.
 
-**Version**: 4.1.0 | **Ratified**: 2026-08-19 | **Last Amended**: 2026-08-28
+**Version**: 4.2.0 | **Ratified**: 2026-08-19 | **Last Amended**: 2026-08-29

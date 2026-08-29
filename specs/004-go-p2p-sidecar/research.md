@@ -2,22 +2,22 @@
 
 ## File Transfer Protocol over go-libp2p Streams
 
-**Decision**: The file transfer protocol (`/p2p-file-transfer/1.0.0`) will use a length-prefixed Protobuf metadata header followed immediately by raw file bytes chunked over the stream.
+**Decision**: The file transfer protocol (`/trainswarm/file/1.0.0`) uses a JSON metadata header followed immediately by raw file bytes chunked over the stream. In addition, a file request protocol (`/trainswarm/request/1.0.0`) enables receivers to actively request files by name from remote owners.
 
 **Rationale**:
-go-libp2p streams are bidirectional byte streams. To send both structured metadata (filename, size, hash) and arbitrary binary data, the simplest approach is to send a protobuf message length-prefixed using `go-msgio` (or standard `encoding/binary` varint). The receiver reads the length, decodes the protobuf metadata, validates it, and then streams the remaining raw bytes directly to disk. This avoids the CPU overhead of wrapping every file chunk in a protobuf message.
+go-libp2p streams are bidirectional byte streams. To send both structured metadata (filename, size, hash) and arbitrary binary data, the transfer manager sends a JSON header, waits for acceptance, and streams raw bytes directly to disk. Supporting `/trainswarm/request/1.0.0` allows pulling files on demand without requiring the sender to know ahead of time when the receiver is ready.
 
 **Alternatives considered**:
 - Wrapping every chunk in a Protobuf envelope: High CPU/memory overhead for large files.
-- Two separate streams (one for metadata, one for data): Requires complex correlation and state management.
+- Push-only transfer model: Inflexible when requesters need to initiate retrieval of specific checkpoints.
 
-## Circuit Relay v2 and DCUtR Configuration
+## Circuit Relay v2, DCUtR, and Transient Stream Management
 
-**Decision**: The sidecar will use `libp2p.EnableRelayClient()` and `libp2p.EnableHolePunching()` built into go-libp2p.
+**Decision**: The sidecar configures `libp2p.EnableRelay()` and `libp2p.EnableHolePunching()`, tracks its bootstrap relay internally, and wraps stream negotiation with `network.WithUseTransient()`.
 
 **Rationale**:
-go-libp2p natively supports DCUtR (Direct Connection Upgrade through Relay) via the `p2p/host/autorelay` and `p2p/protocol/holepunch` packages. When the node is configured with `libp2p.EnableRelayClient()` and connected to a public relay, it can be dialed via its circuit relay multiaddress. The `libp2p.EnableHolePunching()` option automatically runs the DCUtR protocol whenever an incoming relayed connection is detected, coordinating a hole punch.
+go-libp2p marks Circuit Relay v2 connections as transient. By default, `NewStream` blocks on transient connections waiting for direct upgrades via DCUtR. Using `network.WithUseTransient` allows application streams to negotiate and transfer data immediately across relay circuits while DCUtR attempts hole punching in the background. Automating internal relay circuit addresses (`/p2p/<relayID>/p2p-circuit`) simplifies client integration by allowing callers to specify only target peer IDs.
 
 **Alternatives considered**:
-- Custom TURN server / WebRTC: Adds significant infrastructure complexity; libp2p is already being used.
-- Manual hole punching coordination: Prone to errors, reinventing the built-in go-libp2p standard.
+- Requiring callers to supply full circuit relay multiaddresses: Leaks internal networking topology to host applications.
+- Blocking on DCUtR before allowing transfers: Fails or times out on symmetric or restrictive NATs where direct hole punching is impossible.

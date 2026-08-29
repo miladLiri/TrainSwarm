@@ -22,13 +22,16 @@ The data model for the Go P2P Sidecar focuses entirely on connection state manag
   - `FAILED`: Connection attempt failed.
 
 ### Transfer Metadata (libp2p Stream Header)
-- **Description**: The length-prefixed Protobuf/JSON payload sent at the start of the `/p2p-file-transfer/1.0.0` stream.
+- **Description**: The JSON payload sent at the start of the `/trainswarm/file/1.0.0` stream.
 - **Fields**:
-  - `TransferID` (string, UUID)
   - `FileName` (string)
   - `FileSize` (int64)
   - `SHA256` (string, hex encoded)
-  - `ChunkSize` (uint32)
+
+### Request Wire Message (libp2p File Request Header)
+- **Description**: The JSON payload sent over the `/trainswarm/request/1.0.0` stream to pull a file from a remote owner.
+- **Fields**:
+  - `FileName` (string)
 
 ### Transfer Status
 - **Description**: The state of an ongoing file transfer.

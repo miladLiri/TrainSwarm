@@ -26,7 +26,7 @@ The feature builds a standalone Go P2P Sidecar executable that runs alongside th
 
 **Performance Goals**: Low memory footprint for streaming (>1GB files under 100MB RAM), fast connection upgrade (<10s).
 
-**Constraints**: MUST bind gRPC to `127.0.0.1` only, MUST implement DCUtR, MUST use `/p2p-file-transfer/1.0.0`.
+**Constraints**: MUST bind gRPC to `127.0.0.1` only, MUST implement DCUtR, MUST use `/trainswarm/file/1.0.0` and `/trainswarm/request/1.0.0`.
 
 **Scale/Scope**: Single sidecar per Python application instance.
 

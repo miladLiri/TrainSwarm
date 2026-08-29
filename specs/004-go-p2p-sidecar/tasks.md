@@ -63,12 +63,12 @@
 
 ### Implementation for User Story 2
 
-- [x] T017 [P] [US2] Define protocol constants (`/p2p-file-transfer/1.0.0`) and chunk framing in `src/p2p-node/internal/transfer/protocol.go`
-- [x] T018 [US2] Implement receiver logic: temporary `.part` file, SHA-256 verification, and atomic rename in `src/p2p-node/internal/transfer/receiver.go`
-- [x] T019 [US2] Implement sender logic: read from disk, bounded chunk streaming in `src/p2p-node/internal/transfer/sender.go`
-- [x] T020 [US2] Implement `SendFile` and `AcceptFile` RPCs in `src/p2p-node/internal/api/server.go` tying to transfer logic
+- [x] T017 [P] [US2] Define protocol constants (`/trainswarm/file/1.0.0`, `/trainswarm/request/1.0.0`) and chunk framing in `src/p2p-node/internal/transfer/protocol.go`
+- [x] T018 [US2] Implement receiver logic: temporary `.part` file, SHA-256 verification, and atomic rename in `src/p2p-node/internal/transfer/protocol.go`
+- [x] T019 [US2] Implement sender logic: read from disk, bounded chunk streaming with transient stream support in `src/p2p-node/internal/transfer/protocol.go`
+- [x] T020 [US2] Implement `SendFile`, `AcceptFile`, and `RequestFile` RPCs in `src/p2p-node/internal/api/server.go` tying to transfer logic
 - [x] T021 [US2] Implement `CancelTransfer` RPC mapping to context cancellation
-- [x] T022 [US2] Emit transfer lifecycle events (`TRANSFER_STARTED`, `TRANSFER_PROGRESS`, `TRANSFER_COMPLETED`) to the event bus from sender/receiver
+- [x] T022 [US2] Emit transfer and request lifecycle events (`TRANSFER_REQUESTED`, `EVENT_FILE_REQUESTED`, `TRANSFER_STARTED`, `TRANSFER_PROGRESS`, `TRANSFER_COMPLETED`) to the event bus
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 

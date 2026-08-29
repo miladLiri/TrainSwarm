@@ -92,3 +92,10 @@ grpcurl -plaintext -d '{
 Both Node A's `SendFile` stream and Node B's `AcceptFile` stream will output `EVENT_TRANSFER_PROGRESS` followed by `EVENT_TRANSFER_COMPLETED`.
 
 Verify `received_testfile.dat` matches `testfile.dat` exactly.
+
+### Alternative: Pull / Request Workflow
+Alternatively, Node B can explicitly request a file from Node A:
+```bash
+grpcurl -plaintext -d '{"peer_id": "<NODE_A_PEER_ID>", "file_name": "testfile.dat"}' localhost:9002 p2p.v1.P2PNode/RequestFile
+```
+Node A's `WatchEvents` stream emits `EVENT_FILE_REQUESTED`, allowing Node A to initiate `SendFile`.

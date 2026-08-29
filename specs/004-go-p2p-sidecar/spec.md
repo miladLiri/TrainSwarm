@@ -15,6 +15,11 @@
 - Q: If `overwrite=false` is passed to `AcceptFile` and the destination file already exists, how should the sidecar handle it? → A: Reject the transfer at the libp2p protocol level (sending a `REJECT` message) and return an error to the caller.
 - Q: Does the localhost gRPC API require authentication between the Python application and the Go sidecar? → A: No authentication required; binding to `127.0.0.1` is sufficient.
 
+### Session 2026-08-29
+- Q: How does a node request/pull a specific file from a remote owner? → A: The node calls `RequestFile` over gRPC. The sidecar opens a `/trainswarm/request/1.0.0` stream to the owner. The owner's sidecar emits an `EVENT_FILE_REQUESTED` event via `WatchEvents`, prompting the owner application to stream the file via `SendFile`.
+- Q: Should callers supply relay multiaddresses when connecting to peers? → A: No. The sidecar maintains its internal bootstrap relay reservation and automatically constructs circuit relay routes (`/p2p/<relayID>/p2p-circuit`) when dialing target peer IDs.
+- Q: How are streams negotiated if DCUtR hole punching is in progress or unsupported? → A: All application streams MUST use transient connection allowances (`WithUseTransient`) to negotiate immediately across the relay circuit without blocking.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Reliable Direct Connection via DCUtR (Priority: P1)
@@ -23,7 +28,7 @@ As a Python Application (Trainer or Client), I want the Go sidecar to establish 
 
 **Why this priority**: Core networking capability required to decouple the Python application from libp2p implementation details while ensuring reliable NAT traversal.
 
-**Independent Test**: Can be tested by starting two sidecar instances behind simulated NATs and a public relay. Python application instructs Sidecar A to connect to Sidecar B via the relay. Sidecar A reports `RELAY_CONNECTED`, then shortly after reports `CONNECTION_UPGRADED_TO_DIRECT`.
+**Independent Test**: Can be tested by starting two sidecar instances behind simulated NATs and a public relay. Python application instructs Sidecar A to connect to Sidecar B by peer ID. Sidecar A reports `RELAY_CONNECTED`, then shortly after reports `CONNECTION_UPGRADED_TO_DIRECT`.
 
 **Acceptance Scenarios**:
 
@@ -32,19 +37,20 @@ As a Python Application (Trainer or Client), I want the Go sidecar to establish 
 
 ---
 
-### User Story 2 - Resilient File Transfer Protocol (Priority: P1)
+### User Story 2 - Resilient File Transfer & Request Protocol (Priority: P1)
 
-As a Python Application, I want to send and receive files through a simple API while the sidecar handles the streaming, hashing, and state management, so that large file transfers complete reliably without consuming excessive memory or leaving corrupted files.
+As a Python Application, I want to send, receive, and request files through a simple API while the sidecar handles the streaming, hashing, and state management, so that large file transfers complete reliably without consuming excessive memory or leaving corrupted files.
 
 **Why this priority**: Essential for sharing model weights and datasets between Trainer and Client.
 
-**Independent Test**: Initiate a large file transfer (> 1GB) between two sidecars. Verify memory usage remains low. Interrupt the transfer midway and verify that no corrupted destination file exists.
+**Independent Test**: Initiate a large file transfer (> 1GB) between two sidecars or request a file by name. Verify memory usage remains low. Interrupt the transfer midway and verify that no corrupted destination file exists.
 
 **Acceptance Scenarios**:
 
 1. **Given** an established connection, **When** the Python app calls `SendFile`, **Then** the sidecar streams the file in bounded chunks, sending progress events, without loading the whole file into memory.
 2. **Given** an incoming file transfer, **When** the sidecar receives the transfer metadata, **Then** it emits a `TRANSFER_REQUESTED` event via `WatchEvents`, allowing the Python app to validate the metadata and call `AcceptFile`. The sidecar then writes incoming chunks to a `.part` file, incrementally hashing them, and atomically renames the file upon successful completion.
-3. **Given** an interrupted or failed transfer, **When** the connection drops, **Then** the `.part` file is discarded and the destination file is never left in an incomplete state.
+3. **Given** a node requiring a file from an owner, **When** the Python app calls `RequestFile`, **Then** the sidecar sends a request message over the request protocol, triggering an `EVENT_FILE_REQUESTED` on the owner sidecar.
+4. **Given** an interrupted or failed transfer, **When** the connection drops, **Then** the `.part` file is discarded and the destination file is never left in an incomplete state.
 
 ---
 
@@ -54,12 +60,12 @@ As a Python Application Developer, I want to interact with the P2P sidecar exclu
 
 **Why this priority**: Defines the strict boundary between application logic (Python) and networking infrastructure (Go).
 
-**Independent Test**: Can be tested by starting the sidecar and querying its endpoints (`GetNodeInfo`, `Connect`, `SendFile`) via a generic gRPC client on `127.0.0.1`.
+**Independent Test**: Can be tested by starting the sidecar and querying its endpoints (`GetNodeInfo`, `Connect`, `SendFile`, `RequestFile`) via a generic gRPC client on `127.0.0.1`.
 
 **Acceptance Scenarios**:
 
-1. **Given** the sidecar is running, **When** the Python app requests `GetNodeInfo`, **Then** it returns the persistent `peer_id`, listening addresses, and reachability status.
-2. **Given** a long-running sidecar, **When** the Python app subscribes to `WatchEvents`, **Then** it receives real-time node-level events (e.g., `PEER_CONNECTED`, `TRANSFER_PROGRESS`).
+1. **Given** the sidecar is running, **When** the Python app requests `GetNodeInfo`, **Then** it returns the persistent `peer_id`, listening addresses, relay addresses, and reachability status.
+2. **Given** a long-running sidecar, **When** the Python app subscribes to `WatchEvents`, **Then** it receives real-time node-level events (e.g., `PEER_CONNECTED`, `EVENT_FILE_REQUESTED`, `TRANSFER_PROGRESS`).
 
 ---
 
@@ -67,7 +73,7 @@ As a Python Application Developer, I want to interact with the P2P sidecar exclu
 
 - What happens when a node restarts? The sidecar must load its persistent libp2p identity from disk so its PeerID remains unchanged.
 - What happens if the public relay goes offline? The sidecar must detect the failure, attempt to reconnect, and report reachability changes via the event stream.
-- What happens if both direct connection and hole punching are impossible (e.g., symmetric NATs)? A `HOLE_PUNCH_FAILED` event is emitted (triggered immediately if both nodes discover symmetric NATs, or after a 10-second timeout), and the sidecar MUST seamlessly fall back to maintaining the Circuit Relay connection and routing file transfers over it, albeit slower.
+- What happens if both direct connection and hole punching are impossible (e.g., symmetric NATs)? A `HOLE_PUNCH_FAILED` event is emitted (triggered immediately if both nodes discover symmetric NATs, or after a 10-second timeout), and the sidecar MUST seamlessly fall back to maintaining the Circuit Relay connection and routing file transfers over it using transient streams.
 - What happens if the Python application crashes during a transfer? The sidecar should detect the dropped gRPC stream and gracefully cancel active transfers.
 - What happens if an incoming file transfer matches an existing destination file? If `overwrite=false`, the sidecar rejects the transfer protocol handshake to save bandwidth.
 - What happens if the local disk runs out of space or encounters permission issues during a transfer? The sidecar MUST immediately abort the transfer, discard the `.part` file, and emit a `TRANSFER_FAILED` event.
@@ -80,15 +86,17 @@ As a Python Application Developer, I want to interact with the P2P sidecar exclu
 
 - **FR-001**: The sidecar MUST act as a standalone executable exposing a versioned, localhost-only gRPC API (e.g., `p2p.v1`) on Windows/Linux.
 - **FR-002**: The sidecar MUST generate a persistent libp2p identity on first run and reuse it on subsequent restarts to maintain a stable `peer_id`.
-- **FR-003**: The sidecar MUST support standard go-libp2p features: identity, security, stream multiplexing, TCP/QUIC, Identify, AutoNAT/reachability detection, and Circuit Relay v2 client.
-- **FR-004**: The sidecar MUST attempt direct connections first. If unreachable directly, it MUST establish a Circuit Relay v2 connection and use the DCUtR protocol to attempt NAT hole punching.
+- **FR-003**: The sidecar MUST support standard go-libp2p features: identity, security, stream multiplexing, TCP/QUIC, Identify, AutoNAT/reachability detection, and Circuit Relay v2 client (`libp2p.EnableRelay()`).
+- **FR-004**: The sidecar MUST manage relay routing internally. When `Connect` is called with a target `peer_id`, the sidecar automatically dials via its internal relay circuit (`/p2p/<relayID>/p2p-circuit`) and attempts a DCUtR hole punch. Callers MUST NOT be required to supply relay addresses.
 - **FR-005**: If DCUtR hole punching succeeds, new streams MUST use the direct connection. The relay connection MUST be kept open for a 30-second grace period after a successful direct upgrade to ensure pending packets are flushed. If hole punching fails, the system MUST fall back to the relay connection and report it as `RELAY_CONNECTED`.
-- **FR-006**: The file transfer API MUST use a dedicated libp2p stream protocol (`/p2p-file-transfer/1.0.0`), supporting streaming in explicitly bounded chunks (maximum 256KB per chunk) to avoid excessive memory usage.
+- **FR-006**: The file transfer API MUST use a dedicated libp2p stream protocol (`/trainswarm/file/1.0.0`), supporting streaming in explicitly bounded chunks (maximum 256KB per chunk) to avoid excessive memory usage.
 - **FR-007**: File receivers MUST write to a temporary `<destination>.part` file, incrementally verify the SHA-256 hash, and atomically rename it upon full verification.
 - **FR-008**: Failed or cancelled transfers MUST NOT leave a corrupted or partial file in the final destination path. If a destination file already exists and `overwrite=false` is provided to `AcceptFile`, the sidecar MUST send a `REJECT` message over the libp2p protocol to save bandwidth and return an `ALREADY_EXISTS` error code to the gRPC caller.
 - **FR-009**: The gRPC API MUST provide server-streaming endpoints for transfers (`SendFile`, `AcceptFile`) and node events (`WatchEvents`). `WatchEvents` MUST emit a `TRANSFER_REQUESTED` event containing transfer metadata before a file can be accepted.
 - **FR-010**: The sidecar MUST automatically refresh and maintain its relay reservation while running (e.g., refreshing every 2 minutes with exponential backoff on failure, up to a maximum of 5 retries).
 - **FR-011**: End-to-end tests MUST be implemented to verify direct transfers, relay-only transfers, DCUtR upgrades, identity persistence, and transfer cancellations.
+- **FR-012**: The sidecar MUST support a pull/request workflow via `RequestFile` RPC and `/trainswarm/request/1.0.0` protocol, emitting `EVENT_FILE_REQUESTED` to notify the host application.
+- **FR-013**: The sidecar MUST open application streams with transient connection allowances (`WithUseTransient`) to enable immediate communication across circuit relay connections without blocking on DCUtR status.
 
 ### Key Entities
 
