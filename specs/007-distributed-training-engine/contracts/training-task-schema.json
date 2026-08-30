@@ -1,0 +1,120 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TrainingTask",
+  "description": "Serialized description of one training task assigned to a trainer",
+  "type": "object",
+  "required": [
+    "task_id",
+    "session_id",
+    "type",
+    "checkpoint_version",
+    "dataset_shard_id",
+    "training"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier of the task"
+    },
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier of the training session"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["canonical_torch"],
+      "description": "Discriminator for the training adapter type"
+    },
+    "checkpoint_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Input checkpoint version (resolves to <checkpoint_version>.pt2)"
+    },
+    "dataset_shard_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Input dataset shard ID (resolves to <dataset_shard_id>.pt)"
+    },
+    "training": {
+      "type": "object",
+      "description": "Polymorphic training configuration determined by 'type'",
+      "required": [
+        "batch_size",
+        "shuffle",
+        "epochs",
+        "gradient_accumulation_steps",
+        "optimizer",
+        "loss"
+      ],
+      "properties": {
+        "batch_size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "shuffle": {
+          "type": "boolean"
+        },
+        "epochs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "gradient_accumulation_steps": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_steps": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "max_grad_norm": {
+          "type": ["number", "null"],
+          "exclusiveMinimum": 0.0
+        },
+        "seed": {
+          "type": ["integer", "null"]
+        },
+        "optimizer": {
+          "type": "object",
+          "required": ["type", "parameters"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["AdamW", "SGD"]
+            },
+            "parameters": {
+              "type": "object"
+            }
+          }
+        },
+        "scheduler": {
+          "type": ["object", "null"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["ConstantLR", "LinearLR", "StepLR", "ExponentialLR", "CosineAnnealingLR"]
+            },
+            "parameters": {
+              "type": "object"
+            }
+          },
+          "required": ["type", "parameters"]
+        },
+        "loss": {
+          "type": "object",
+          "required": ["type", "parameters"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["MSELoss", "L1Loss", "SmoothL1Loss", "CrossEntropyLoss", "BCEWithLogitsLoss"]
+            },
+            "parameters": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    }
+  }
+}

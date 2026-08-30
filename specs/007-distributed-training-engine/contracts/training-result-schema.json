@@ -1,0 +1,47 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TrainingResult",
+  "description": "Result returned by the training engine upon successful execution",
+  "type": "object",
+  "required": [
+    "task_id",
+    "input_checkpoint_version",
+    "output_checkpoint_path",
+    "training_steps",
+    "epochs_completed",
+    "final_loss",
+    "metrics"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "description": "The task identifier that was executed"
+    },
+    "input_checkpoint_version": {
+      "type": "string",
+      "description": "The input global checkpoint version"
+    },
+    "output_checkpoint_path": {
+      "type": "string",
+      "description": "Filesystem path to the local output checkpoint (trained_<task_id>.pt2)"
+    },
+    "training_steps": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total optimizer steps executed"
+    },
+    "epochs_completed": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total epochs executed"
+    },
+    "final_loss": {
+      "type": "number",
+      "description": "The loss value at the final step"
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Detailed execution metrics"
+    }
+  }
+}
