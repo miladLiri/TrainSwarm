@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "StartTrainingCommandPayload",
+  "description": "JSON payload schema for StartTraining command envelope data",
+  "type": "object",
+  "properties": {
+    "trainingClientNodeId": {
+      "type": "string",
+      "description": "Identifier of the client node initiating the training session",
+      "minLength": 1
+    },
+    "sessionId": {
+      "type": "string",
+      "description": "Unique session identifier GUID",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "trainingClientNodeId",
+    "sessionId"
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "trainingClientNodeId": "client-node-01",
+      "sessionId": "4b6ec6b9-9ef3-40e1-8848-d3e923e59530"
+    }
+  ]
+}

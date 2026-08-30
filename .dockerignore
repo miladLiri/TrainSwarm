@@ -5,3 +5,9 @@ Dockerfile*
 *.log*
 .env*
 coverage/
+bin/
+obj/
+__pycache__/
+venv/
+.venv/
+

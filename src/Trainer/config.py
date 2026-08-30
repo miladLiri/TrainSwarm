@@ -17,6 +17,7 @@ class TrainerConfig:
     trainer_node_id: str
     bootstrap_url: str
     coordinator_url: str
+    coordinator_grpc_url: str
     request_timeout_seconds: float
 
 
@@ -24,6 +25,10 @@ def load_config() -> TrainerConfig:
     trainer_node_id = os.getenv("TRAINER_NODE_ID", "trainer-node-01")
     bootstrap_url = os.getenv("BOOTSTRAP_URL", "http://localhost:6000").rstrip("/")
     coordinator_url = os.getenv("COORDINATOR_URL", "http://localhost:5000").rstrip("/")
+    coordinator_grpc_url = os.getenv("COORDINATOR_GRPC_URL", "localhost:5000")
+    if "://" in coordinator_grpc_url:
+        coordinator_grpc_url = coordinator_grpc_url.split("://", 1)[1]
+    coordinator_grpc_url = coordinator_grpc_url.rstrip("/")
     
     timeout_raw = os.getenv("REQUEST_TIMEOUT_SECONDS", "5.0")
     try:
@@ -35,6 +40,7 @@ def load_config() -> TrainerConfig:
         trainer_node_id=trainer_node_id,
         bootstrap_url=bootstrap_url,
         coordinator_url=coordinator_url,
+        coordinator_grpc_url=coordinator_grpc_url,
         request_timeout_seconds=timeout,
     )
 

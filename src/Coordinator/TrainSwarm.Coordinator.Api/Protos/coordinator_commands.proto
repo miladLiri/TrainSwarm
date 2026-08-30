@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package trainswarm.coordinator;
+
+option csharp_namespace = "TrainSwarm.Coordinator.Grpc";
+
+// Request sent by the Trainer to establish a long-lived command subscription stream.
+message TrainerRegistrationRequest {
+  string trainer_id = 1;
+}
+
+// Common envelope for all commands pushed from Coordinator to Trainer.
+message CommandEnvelope {
+  string id = 1;
+  string type = 2;
+  string data = 3; // UTF-8 JSON payload string
+}
+
+// gRPC service exposed by the .NET Coordinator for Trainer command streams.
+service CoordinatorCommandService {
+  // Initiates a long-lived server-to-client command streaming session.
+  rpc SubscribeCommands(TrainerRegistrationRequest) returns (stream CommandEnvelope);
+}
