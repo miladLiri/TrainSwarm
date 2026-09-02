@@ -1,10 +1,10 @@
-﻿"""
+"""
 Training package for the distributed training engine.
 """
 
 from .model_type import ModelType
 from .training_task_model import TrainingTask
-from .training_result import TrainingResult
+from .training_result import TrainingResult, ExecutionInfo, DeltaArtifactInfo
 from .training_adapter import TrainingAdapter
 from .training_adapter_registry import TrainingAdapterRegistry
 from .training_orchestrator import TrainingOrchestrator
@@ -25,12 +25,17 @@ from .exceptions import (
     InvalidCriterionParametersError,
     TrainingExecutionError,
     ResultSaveError,
+    DeltaCalculationError,
+    TensorCompatibilityError,
+    ReconstructionError,
 )
 
 __all__ = [
     "ModelType",
     "TrainingTask",
     "TrainingResult",
+    "ExecutionInfo",
+    "DeltaArtifactInfo",
     "TrainingAdapter",
     "TrainingAdapterRegistry",
     "TrainingOrchestrator",
@@ -50,4 +55,8 @@ __all__ = [
     "InvalidCriterionParametersError",
     "TrainingExecutionError",
     "ResultSaveError",
+    "DeltaCalculationError",
+    "TensorCompatibilityError",
+    "ReconstructionError",
 ]
+

@@ -1,6 +1,7 @@
-﻿"""
+"""
 Sample training runner for the Distributed Training Engine test scenario.
-Executes TrainingOrchestrator over local task with checkpoint-001.pt2 and shard-001.pt.
+Executes TrainingOrchestrator over local task with base_model_v1.pt2 and dataset1_shard1.pt,
+producing base_model_v1_dataset1_shard1.safetensors delta artifact.
 """
 
 import hashlib
@@ -45,8 +46,8 @@ def main() -> None:
     logger.info("=== Starting Distributed Training Engine Local Verification ===")
 
     # 2. Check input artifacts exist
-    checkpoint_path = SAMPLE_DIR / "checkpoint-001.pt2"
-    shard_path = SAMPLE_DIR / "shard-001.pt"
+    checkpoint_path = SAMPLE_DIR / "base_model_v1.pt2"
+    shard_path = SAMPLE_DIR / "dataset1_shard1.pt"
 
     if not checkpoint_path.is_file() or not shard_path.is_file():
         logger.error(
@@ -57,16 +58,17 @@ def main() -> None:
 
     initial_checkpoint_hash = compute_file_sha256(checkpoint_path)
     initial_shard_hash = compute_file_sha256(shard_path)
-    logger.info("Verified input checkpoint: %s (hash: %s...)", checkpoint_path.name, initial_checkpoint_hash[:12])
+    logger.info("Verified input baseline model: %s (hash: %s...)", checkpoint_path.name, initial_checkpoint_hash[:12])
     logger.info("Verified input dataset shard: %s (hash: %s...)", shard_path.name, initial_shard_hash[:12])
 
     # 3. Construct TrainingTask DTO
     task_payload = {
-        "task_id": "task-001",
-        "session_id": "session-001",
+        "training_task_id": "task-001",
+        "baseline_model_id": "base_model",
+        "baseline_model_version": "v1",
+        "data_set_id": "dataset1",
+        "data_set_shard_id": "shard1",
         "type": ModelType.CANONICAL_TORCH.value,
-        "checkpoint_version": "checkpoint-001",
-        "dataset_shard_id": "shard-001",
         "training": {
             "batch_size": 2,
             "shuffle": True,
@@ -99,7 +101,7 @@ def main() -> None:
     }
 
     task = TrainingTask.from_dict(task_payload)
-    logger.info("Constructed TrainingTask DTO for task_id '%s'", task.task_id)
+    logger.info("Constructed TrainingTask DTO for training_task_id '%s'", task.training_task_id)
 
     # 4. Instantiate TrainingOrchestrator and run
     orchestrator = TrainingOrchestrator()
@@ -112,22 +114,25 @@ def main() -> None:
     logger.info("Training Result Summary:")
     print(json.dumps(result.to_dict(), indent=2))
 
-    # Verify output artifact exists
-    output_path = Path(result.output_checkpoint_path)
-    assert output_path.is_file(), f"Output checkpoint file {output_path} was not created!"
-    logger.info("[VERIFIED] Output artifact created: %s (%d bytes)", output_path.name, output_path.stat().st_size)
+    # Verify output delta artifact exists
+    delta_path = Path(result.delta.path)
+    assert delta_path.is_file(), f"Output delta file {delta_path} was not created!"
+    logger.info(
+        "[VERIFIED] Output delta artifact created: %s (%d bytes, %d tensors)",
+        delta_path.name, result.delta.size_bytes, result.delta.tensor_count
+    )
 
     # Verify input immutability
     post_checkpoint_hash = compute_file_sha256(checkpoint_path)
     post_shard_hash = compute_file_sha256(shard_path)
     assert post_checkpoint_hash == initial_checkpoint_hash, "CRITICAL: Input checkpoint file was modified!"
     assert post_shard_hash == initial_shard_hash, "CRITICAL: Input dataset shard file was modified!"
-    logger.info("[VERIFIED] Input checkpoint and shard remained strictly immutable (hashes matched).")
+    logger.info("[VERIFIED] Input baseline model and shard remained strictly immutable (hashes matched).")
 
     # Verify loss reduction
     if len(result.metrics.get("loss_history", [])) >= 2:
         initial_loss = result.metrics["loss_history"][0]
-        final_loss = result.final_loss
+        final_loss = result.metrics.get("final_loss", 0.0)
         logger.info("[METRICS] Initial batch loss: %.6f -> Final loss: %.6f", initial_loss, final_loss)
 
     logger.info("=== All verification checks passed successfully! ===")
@@ -135,3 +140,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
