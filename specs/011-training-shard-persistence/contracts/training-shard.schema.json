@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TrainingShard",
+  "description": "Schema definition for local persistent training state of one dataset shard for one model version.",
+  "type": "object",
+  "required": [
+    "id",
+    "model_id",
+    "model_type",
+    "model_version",
+    "dataset_id",
+    "shard_id",
+    "artifact_path",
+    "sample_count",
+    "status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique local identifier (UUID4) for the persisted TrainingShard."
+    },
+    "model_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the model being trained."
+    },
+    "model_type": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifies the distributed training engine model type / architecture."
+    },
+    "model_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Version of the global model checkpoint against which this shard is trained."
+    },
+    "dataset_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the dataset from which the shard was created."
+    },
+    "shard_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the dataset shard."
+    },
+    "artifact_path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Local filesystem path to the dataset shard artifact."
+    },
+    "sample_count": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of training samples contained in the shard (strictly positive)."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ready", "training", "completed", "failed"],
+      "description": "Training lifecycle status."
+    },
+    "metrics": {
+      "type": ["object", "null"],
+      "description": "Arbitrary training execution metrics produced by training operation.",
+      "additionalProperties": true
+    },
+    "training_metadata": {
+      "type": ["object", "null"],
+      "description": "Arbitrary training execution metadata.",
+      "additionalProperties": true
+    },
+    "update_artifact_path": {
+      "type": ["string", "null"],
+      "description": "Local filesystem path to the generated training update/delta artifact."
+    },
+    "training_task_id": {
+      "type": ["string", "null"],
+      "description": "Identifier of the assigned training task."
+    }
+  },
+  "additionalProperties": false
+}

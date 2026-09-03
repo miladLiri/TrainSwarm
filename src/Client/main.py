@@ -6,6 +6,11 @@ from application.state import ClientState
 from application.session_service import SessionService
 from infrastructure.coordinator_client import HttpCoordinatorClient
 from infrastructure.bootstrap_client import BootstrapClient, BootstrapError
+from infrastructure.persistence import (
+    DatabaseManager,
+    TrainingShardRepository,
+    DatabaseInitializationError,
+)
 from presentation.console_ui import ConsoleUI
 
 
@@ -17,7 +22,7 @@ def main() -> int:
         bootstrap_url=config.bootstrap_url,
     )
 
-    # 2. Initialize Infrastructure Clients
+    # 2. Initialize Infrastructure Clients & Persistence
     coordinator_client = HttpCoordinatorClient(
         base_url=config.coordinator_url,
         timeout=config.request_timeout_seconds,
@@ -26,6 +31,14 @@ def main() -> int:
         base_url=config.bootstrap_url,
         timeout=config.request_timeout_seconds,
     )
+    db_manager = DatabaseManager()
+    try:
+        db_manager.initialize()
+        shard_repository = TrainingShardRepository(db_manager)
+        print(f"[Client] Local persistence initialized at: {db_manager.db_path}")
+    except DatabaseInitializationError as e:
+        print(f"[Client] [ERROR] Failed to initialize local persistence: {e}")
+        shard_repository = None
 
     # 3. Initialize Application Service
     session_service = SessionService(
