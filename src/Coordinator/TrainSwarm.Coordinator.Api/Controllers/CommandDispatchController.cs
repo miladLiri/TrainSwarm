@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using TrainSwarm.Coordinator.Domain.Commands;
+using TrainSwarm.Coordinator.Application.Commands;
 
 namespace TrainSwarm.Coordinator.Api.Controllers;
 

@@ -1,51 +1,39 @@
+﻿using System;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using TrainSwarm.Coordinator.Api.Grpc;
-using TrainSwarm.Coordinator.Domain.Commands;
-using TrainSwarm.Coordinator.Domain.Context;
-using TrainSwarm.Coordinator.Domain.Services;
+using TrainSwarm.Coordinator.Application.Commands;
+using TrainSwarm.Coordinator.Application.Services;
+using TrainSwarm.Coordinator.Infrastructure;
+using TrainSwarm.Coordinator.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 
-var dbServer = Environment.GetEnvironmentVariable("DB_SERVER");
-var dbName = Environment.GetEnvironmentVariable("DB_NAME");
-var dbUser = Environment.GetEnvironmentVariable("DB_USER");
-var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
-
-if (string.IsNullOrWhiteSpace(dbServer) ||
-    string.IsNullOrWhiteSpace(dbName) ||
-    string.IsNullOrWhiteSpace(dbUser) ||
-    string.IsNullOrWhiteSpace(dbPassword))
+var connectionString = Environment.GetEnvironmentVariable("COORDINATOR_DB_CONNECTION_STRING");
+if (string.IsNullOrWhiteSpace(connectionString))
 {
-    throw new Exception("Database environment variables are not fully configured.");
+    throw new InvalidOperationException("COORDINATOR_DB_CONNECTION_STRING environment variable is missing or empty.");
 }
 
-string connectionString =
-    $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};TrustServerCertificate=True;Encrypt=False;";
+builder.Services.AddCoordinatorPersistenceServices(connectionString);
 
-
-builder.Services.AddDbContext<CoordinatorDbContext>(options => options.UseSqlServer(connectionString));
+builder.Services.AddScoped<TrainingTaskService>();
 
 builder.Services.AddGrpc();
 builder.Services.AddSingleton<ITrainerConnectionManager, TrainerConnectionManager>();
 builder.Services.AddSingleton<ICommandCenter, CommandCenter>();
-
-builder.Services.AddScoped<SessionService>();
-builder.Services.AddScoped<TrainerService>();
-
-builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddControllers();
 
 var app = builder.Build();
 
 app.MapGrpcService<CoordinatorCommandServiceImpl>();
-app.MapControllers();   
+app.MapControllers();
 app.MapOpenApi();
- 
-
-app.UseHttpsRedirection();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -54,4 +42,3 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
-

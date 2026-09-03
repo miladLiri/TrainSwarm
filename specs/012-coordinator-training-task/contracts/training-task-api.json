@@ -1,0 +1,167 @@
+﻿{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "TrainSwarm Coordinator API",
+    "description": "Distributed Training Coordinator API for task provisioning and command dispatching.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/training-tasks": {
+      "post": {
+        "tags": [
+          "TrainingTasks"
+        ],
+        "summary": "Create and atomically persist training tasks for dataset shards",
+        "description": "Validates the request parameters and persists exactly one TrainingTask entity per requested shard within an atomic transaction.",
+        "operationId": "CreateTrainingTasks",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTrainingTaskDto"
+              },
+              "example": {
+                "clientNodeId": "client-01",
+                "modelId": "gpt2",
+                "modelVersion": "1",
+                "dataSetId": "dataset-01",
+                "shardIdList": [
+                  "shard-01",
+                  "shard-02",
+                  "shard-03"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Training tasks created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateTrainingTaskResponseDto"
+                },
+                "example": {
+                  "trainingTaskIds": [
+                    "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    "7ba85f64-5717-4562-b3fc-2c963f66afa7",
+                    "cba85f64-5717-4562-b3fc-2c963f66afa8"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failure in request parameters",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                },
+                "example": {
+                  "type": "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                  "title": "One or more validation errors occurred.",
+                  "status": 400,
+                  "errors": {
+                    "Invalid.ClientNodeId": [
+                      "ClientNodeId is required and cannot be empty or whitespace."
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error during persistence or processing"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateTrainingTaskDto": {
+        "type": "object",
+        "required": [
+          "clientNodeId",
+          "modelId",
+          "modelVersion",
+          "dataSetId",
+          "shardIdList"
+        ],
+        "properties": {
+          "clientNodeId": {
+            "type": "string",
+            "description": "Identifier of the client node initiating the training task"
+          },
+          "modelId": {
+            "type": "string",
+            "description": "Identifier of the neural model being trained"
+          },
+          "modelVersion": {
+            "type": "string",
+            "description": "Version string of the model checkpoint"
+          },
+          "dataSetId": {
+            "type": "string",
+            "description": "Identifier of the dataset"
+          },
+          "shardIdList": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of dataset shard identifiers to create tasks for (non-empty, distinct)"
+          }
+        }
+      },
+      "CreateTrainingTaskResponseDto": {
+        "type": "object",
+        "required": [
+          "trainingTaskIds"
+        ],
+        "properties": {
+          "trainingTaskIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "List of generated GUIDs corresponding to the created training tasks"
+          }
+        }
+      },
+      "ValidationProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

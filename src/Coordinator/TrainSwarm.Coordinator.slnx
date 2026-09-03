@@ -1,6 +1,8 @@
-<Solution>
+﻿<Solution>
   <Folder Name="/Core/">
     <Project Path="TrainSwarm.Coordinator.Domain/TrainSwarm.Coordinator.Domain.csproj" />
+    <Project Path="TrainSwarm.Coordinator.Application/TrainSwarm.Coordinator.Application.csproj" />
+    <Project Path="TrainSwarm.Coordinator.Infrastructure/TrainSwarm.Coordinator.Infrastructure.csproj" />
   </Folder>
   <Project Path="TrainSwarm.Coordinator.Api/TrainSwarm.Coordinator.Api.csproj" />
 </Solution>

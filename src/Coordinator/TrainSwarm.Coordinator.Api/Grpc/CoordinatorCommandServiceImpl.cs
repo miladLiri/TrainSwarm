@@ -1,5 +1,5 @@
 using Grpc.Core;
-using TrainSwarm.Coordinator.Domain.Commands;
+using TrainSwarm.Coordinator.Application.Commands;
 using TrainSwarm.Coordinator.Grpc;
 using ProtoEnvelope = TrainSwarm.Coordinator.Grpc.CommandEnvelope;
 
