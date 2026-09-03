@@ -1,8 +1,8 @@
-﻿"""
+"""
 Sample setup script for the Distributed Training Engine test scenario.
 Generates:
-1. checkpoint-001.pt2 (Exported PyTorch 2 MLP model with dynamic batch dimension)
-2. shard-001.pt (10-sample canonical dataset shard with float32 x and y tensors)
+1. base_model_v1.pt2 (Exported PyTorch 2 MLP model with dynamic batch dimension)
+2. dataset1_shard1.pt (10-sample canonical dataset shard with float32 x and y tensors)
 """
 
 import sys
@@ -45,7 +45,7 @@ def generate_sample_artifacts() -> None:
         dynamic_shapes=({0: batch_dim},)
     )
 
-    checkpoint_path = SAMPLE_DIR / "checkpoint-001.pt2"
+    checkpoint_path = SAMPLE_DIR / "base_model_v1.pt2"
     torch.export.save(exported_program, str(checkpoint_path))
     print(f"[OK] Exported checkpoint saved: {checkpoint_path.name} ({checkpoint_path.stat().st_size} bytes)")
 
@@ -55,7 +55,7 @@ def generate_sample_artifacts() -> None:
     weights = torch.tensor([[2.0], [-3.0], [1.0], [-0.5]], dtype=torch.float32)
     y_data = torch.matmul(x_data, weights) + torch.randn(num_samples, 1, dtype=torch.float32) * 0.05
 
-    shard_path = SAMPLE_DIR / "shard-001.pt"
+    shard_path = SAMPLE_DIR / "dataset1_shard1.pt"
     torch.save({"x": x_data, "y": y_data}, str(shard_path))
     print(f"[OK] Dataset shard saved: {shard_path.name} ({num_samples} samples, {shard_path.stat().st_size} bytes)")
 
@@ -64,3 +64,4 @@ def generate_sample_artifacts() -> None:
 
 if __name__ == "__main__":
     generate_sample_artifacts()
+

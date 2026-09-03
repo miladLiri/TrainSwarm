@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PartitioningRequest",
+  "description": "Schema for the Distributed Training Engine PartitioningRequest envelope",
+  "type": "object",
+  "required": [
+    "model_type",
+    "datasetPath",
+    "shardsOutputDirectory",
+    "sampleOutputDirecotry",
+    "datasetId"
+  ],
+  "properties": {
+    "model_type": {
+      "type": "string",
+      "enum": ["canonical_torch"],
+      "description": "The model/training framework type identifying the adapter to use"
+    },
+    "datasetPath": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Filesystem path to the input dataset to be partitioned"
+    },
+    "shardsOutputDirectory": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Filesystem directory where generated shards must be stored"
+    },
+    "sampleOutputDirecotry": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Filesystem directory where representative samples must be saved"
+    },
+    "datasetId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier uniquely identifying the dataset"
+    }
+  },
+  "additionalProperties": false
+}

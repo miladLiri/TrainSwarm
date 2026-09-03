@@ -1,0 +1,117 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trainswarm.org/schemas/training-result.json",
+  "title": "TrainingResult",
+  "description": "JSON schema for the training result envelope returned upon task completion.",
+  "type": "object",
+  "required": [
+    "trainingTaskId",
+    "baseModelId",
+    "baseModelVersion",
+    "datasetId",
+    "datasetShardId",
+    "samplesTrained",
+    "metrics",
+    "execution",
+    "delta"
+  ],
+  "properties": {
+    "trainingTaskId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Matching training task identifier."
+    },
+    "baseModelId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Baseline model identifier."
+    },
+    "baseModelVersion": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Baseline model version tag."
+    },
+    "datasetId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Dataset identifier."
+    },
+    "datasetShardId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Dataset shard identifier."
+    },
+    "samplesTrained": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total training samples processed across all epochs."
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Generic dictionary containing training metrics and telemetry."
+    },
+    "execution": {
+      "type": "object",
+      "required": [
+        "startedAt",
+        "completedAt",
+        "durationMs"
+      ],
+      "properties": {
+        "startedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO-8601 UTC timestamp of execution start."
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO-8601 UTC timestamp of execution finish."
+        },
+        "durationMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Execution duration in elapsed milliseconds."
+        }
+      },
+      "additionalProperties": false
+    },
+    "delta": {
+      "type": "object",
+      "required": [
+        "filename",
+        "path",
+        "format",
+        "tensorCount",
+        "sizeBytes"
+      ],
+      "properties": {
+        "filename": {
+          "type": "string",
+          "description": "Base filename of the exported .safetensors delta artifact."
+        },
+        "path": {
+          "type": "string",
+          "description": "Absolute filesystem path to the delta artifact file."
+        },
+        "format": {
+          "type": "string",
+          "enum": ["safetensors"],
+          "description": "Serialization format of the delta artifact."
+        },
+        "tensorCount": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of parameter tensors contained in the delta."
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "File size in bytes of the saved artifact."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

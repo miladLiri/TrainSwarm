@@ -1,0 +1,53 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trainswarm.org/schemas/training-task.json",
+  "title": "TrainingTask",
+  "description": "JSON schema for a training task envelope dispatched to a trainer node.",
+  "type": "object",
+  "required": [
+    "training_task_id",
+    "baseline_model_id",
+    "baseline_model_version",
+    "data_set_id",
+    "data_set_shard_id",
+    "type",
+    "training"
+  ],
+  "properties": {
+    "training_task_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier for this specific training task execution."
+    },
+    "baseline_model_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Logical identifier of the model architecture and training target."
+    },
+    "baseline_model_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Immutable version tag of the baseline model checkpoint."
+    },
+    "data_set_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Logical identifier of the dataset."
+    },
+    "data_set_shard_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the specific dataset shard assigned for training."
+    },
+    "type": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the training adapter (e.g., 'canonical_torch')."
+    },
+    "training": {
+      "type": "object",
+      "description": "Adapter-specific hyperparameters and configuration payload."
+    }
+  },
+  "additionalProperties": false
+}

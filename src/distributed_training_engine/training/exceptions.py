@@ -1,4 +1,4 @@
-﻿"""
+"""
 Domain exceptions and error definitions for the distributed training engine.
 """
 
@@ -81,3 +81,19 @@ class TrainingExecutionError(TrainingEngineError):
 class ResultSaveError(TrainingEngineError):
     """Raised when saving the locally trained output artifact fails."""
     pass
+
+
+class DeltaCalculationError(TrainingEngineError):
+    """Raised when model delta calculation fails due to incompatible states."""
+    pass
+
+
+class TensorCompatibilityError(TrainingEngineError):
+    """Raised when tensors have mismatched shapes, names, or data types during delta operations."""
+    pass
+
+
+class ReconstructionError(TrainingEngineError):
+    """Raised when reconstructing a trained model from baseline weights and delta fails."""
+    pass
+
