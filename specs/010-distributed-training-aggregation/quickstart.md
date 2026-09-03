@@ -83,7 +83,7 @@ python verify.py
 from pathlib import Path
 from distributed_training_engine.model_type import ModelType
 from distributed_training_engine.aggregation.aggregation_request import AggregationRequest, ModelUpdate
-from distributed_training_engine.aggregation.aggregation_orchecstrator import AggregationOrchestrator
+from distributed_training_engine.aggregation.aggregation_orchestrator import AggregationOrchestrator
 
 # 1. Prepare request referencing base model and trainer delta artifacts
 request = AggregationRequest(

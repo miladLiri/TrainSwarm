@@ -151,7 +151,7 @@ As an engineer verifying the engine, I want a complete, runnable sample test sui
       │   ├── aggregator_adapter.py
       │   ├── aggregation_request.py
       │   ├── aggregation_result.py
-      │   └── aggregation_orchecstrator.py
+      │   └── aggregation_orchestrator.py
       │
       ├── partitioning/
       │   ├── exceptions.py
@@ -172,7 +172,7 @@ As an engineer verifying the engine, I want a complete, runnable sample test sui
               └── partitioning/
                   └── canonical_torch_partitioner.py
   ```
-  *(Note: Exact file/directory spellings specified by contract: `aggregator_adapter_registery.py`, `aggregation_orchecstrator.py`, and `adapters/canonical_torch/aggragation/canonical_torch_aggregator.py`).*
+  *(Note: Exact file/directory spellings specified by contract: `aggregator_adapter_registery.py`, `aggregation_orchestrator.py`, and `adapters/canonical_torch/aggragation/canonical_torch_aggregator.py`).*
 - **FR-002**: Existing training and partitioning behavior MUST NOT be redesigned, broken, or regressed by the aggregation implementation.
 
 #### 2. Aggregator Adapter Abstraction (`aggregator_adapter.py`)
@@ -212,8 +212,8 @@ As an engineer verifying the engine, I want a complete, runnable sample test sui
 - **FR-013**: Querying an unregistered `ModelType` MUST raise `AggregatorAdapterNotFoundError`.
 - **FR-014**: The registry MUST NOT contain model-specific or framework-specific aggregation mathematics.
 
-#### 5. Aggregation Orchestrator (`aggregation_orchecstrator.py`)
-- **FR-015**: System MUST define `AggregationOrchestrator` in `aggregation/aggregation_orchecstrator.py`.
+#### 5. Aggregation Orchestrator (`aggregation_orchestrator.py`)
+- **FR-015**: System MUST define `AggregationOrchestrator` in `aggregation/aggregation_orchestrator.py`.
 - **FR-016**: `AggregationOrchestrator` MUST coordinate the aggregation lifecycle in strict sequential order:
   1. Receive `AggregationRequest` and `ModelType`.
   2. Resolve the concrete adapter class from `AggregatorAdapterRegistry`.
@@ -313,5 +313,5 @@ As an engineer verifying the engine, I want a complete, runnable sample test sui
 - Deltas produced by `CanonicalTorchTrainer` are serialized as `.safetensors` files containing parameter difference tensors: $\Delta = \theta_{\text{trained}} - \theta_{\text{base}}$.
 - The canonical PyTorch base model is an exported program artifact saved as `.pt2` via `torch.export.save`.
 - Weighted FedAvg computes independent weighted averages per tensor; optimizer states (e.g. Adam momentum buffers) are not transferred or aggregated in basic FedAvg unless explicitly included in deltas.
-- Python module and file naming adheres strictly to the repository conventions: `aggregator_adapter_registery.py`, `aggregation_orchecstrator.py`, and `adapters/canonical_torch/aggragation/canonical_torch_aggregator.py`.
+- Python module and file naming adheres strictly to the repository conventions: `aggregator_adapter_registery.py`, `aggregation_orchestrator.py`, and `adapters/canonical_torch/aggragation/canonical_torch_aggregator.py`.
 - In accordance with TrainSwarm Constitution Principle V and VII: no mocks or stubs are used; real working implementations and executable verification scripts are mandatory.

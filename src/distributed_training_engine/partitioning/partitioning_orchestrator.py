@@ -15,7 +15,7 @@ from .exceptions import InvalidShardSampleSizeError
 logger = logging.getLogger("distributed_training_engine.partitioning.orchestrator")
 
 
-class PartitioningOrchecstrator:
+class PartitioningOrchestrator:
     """
     Coordinates the dataset partitioning and sampling workflow.
     Resolves model-specific PartitionerAdapter instances through the registry.
@@ -88,4 +88,5 @@ class PartitioningOrchecstrator:
 
 
 # Aliases for naming conventions and compatibility
-PartitioningOrchestrator = PartitioningOrchecstrator
+PartitioningOrchecstrator = PartitioningOrchestrator
+

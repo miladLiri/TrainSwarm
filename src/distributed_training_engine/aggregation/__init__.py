@@ -9,8 +9,7 @@ from .aggregator_adapter_registery import (
     AggregatorAdapterRegistery,
     AggregatorAdapterRegistry,
 )
-from .aggregation_orchecstrator import (
-    AggregationOrchecstrator,
+from .aggregation_orchestrator import (
     AggregationOrchestrator,
 )
 from .exceptions import (
@@ -38,7 +37,6 @@ __all__ = [
     "AggregatorAdapter",
     "AggregatorAdapterRegistery",
     "AggregatorAdapterRegistry",
-    "AggregationOrchecstrator",
     "AggregationOrchestrator",
     "AggregationError",
     "UnsupportedModelTypeError",

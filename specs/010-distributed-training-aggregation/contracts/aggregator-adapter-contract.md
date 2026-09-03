@@ -123,7 +123,7 @@ class AggregatorAdapterRegistry:
 
 ## 3. `AggregationOrchestrator`
 
-Defined in `src/distributed_training_engine/aggregation/aggregation_orchecstrator.py`.  
+Defined in `src/distributed_training_engine/aggregation/aggregation_orchestrator.py`.  
 Lifecycle coordinator for model aggregation. Contains zero framework-specific logic.
 
 ```python

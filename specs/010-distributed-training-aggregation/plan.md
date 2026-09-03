@@ -93,7 +93,7 @@ src/distributed_training_engine/
 │   ├── aggregator_adapter.py                         # Model-agnostic AggregatorAdapter ABC
 │   ├── aggregation_request.py                        # AggregationRequest & ModelUpdate DTOs
 │   ├── aggregation_result.py                         # AggregationResult DTO
-│   └── aggregation_orchecstrator.py                  # AggregationOrchestrator coordinator
+│   └── aggregation_orchestrator.py                   # AggregationOrchestrator coordinator
 │
 └── adapters/
     └── canonical_torch/
@@ -126,7 +126,7 @@ samples/
     └── README.md                                     # Execution instructions and architecture notes
 ```
 
-**Structure Decision**: Implements the aggregation subsystem directly within the required `aggregation/` and `adapters/canonical_torch/aggragation/` folders, preserving existing module names and spellings (`aggregator_adapter_registery.py`, `aggregation_orchecstrator.py`, `adapters/canonical_torch/aggragation/canonical_torch_aggregator.py`). Delivers a full end-to-end runnable sample suite in `samples/distributed_training_test/` satisfying all acceptance criteria and constitutional verification mandates.
+**Structure Decision**: Implements the aggregation subsystem directly within the required `aggregation/` and `adapters/canonical_torch/aggragation/` folders, preserving existing module names and spellings (`aggregator_adapter_registery.py`, `aggregation_orchestrator.py`, `adapters/canonical_torch/aggragation/canonical_torch_aggregator.py`). Delivers a full end-to-end runnable sample suite in `samples/distributed_training_test/` satisfying all acceptance criteria and constitutional verification mandates.
 
 ## Complexity Tracking
 

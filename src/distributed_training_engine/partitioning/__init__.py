@@ -23,9 +23,9 @@ from .partitioner_adapter_registery import (
     PartitionerAdapterRegistery,
     PartitionerAdapterRegistry,
 )
-from .partitioning_orchecstrator import (
-    PartitioningOrchecstrator,
+from .partitioning_orchestrator import (
     PartitioningOrchestrator,
+    PartitioningOrchecstrator,
 )
 
 # Auto-register canonical_torch adapter
@@ -57,6 +57,6 @@ __all__ = [
     "PartitionerAdapter",
     "PartitionerAdapterRegistery",
     "PartitionerAdapterRegistry",
-    "PartitioningOrchecstrator",
     "PartitioningOrchestrator",
+    "PartitioningOrchecstrator",
 ]

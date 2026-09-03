@@ -24,7 +24,7 @@
 - [X] T005 [P] Implement AggregationResult DTO in `src/distributed_training_engine/aggregation/aggregation_result.py`
 - [X] T006 Implement abstract AggregatorAdapter base contract in `src/distributed_training_engine/aggregation/aggregator_adapter.py`
 - [X] T007 Implement AggregatorAdapterRegistry mapping in `src/distributed_training_engine/aggregation/aggregator_adapter_registery.py`
-- [X] T008 Implement AggregationOrchestrator lifecycle coordinator in `src/distributed_training_engine/aggregation/aggregation_orchecstrator.py`
+- [X] T008 Implement AggregationOrchestrator lifecycle coordinator in `src/distributed_training_engine/aggregation/aggregation_orchestrator.py`
 
 **Checkpoint**: Core aggregation contracts, exceptions, registry, and orchestrator are ready.
 
@@ -40,7 +40,7 @@
 - [X] T010 [US1] Implement sample-weighted Federated Averaging algorithm in `float64` accumulator across floating-point parameter tensors in `src/distributed_training_engine/adapters/canonical_torch/aggragation/canonical_torch_aggregator.py`
 - [X] T011 [US1] Implement integer tracking buffer weighted averaging with rounding and type casting in `src/distributed_training_engine/adapters/canonical_torch/aggragation/canonical_torch_aggregator.py`
 - [X] T012 [US1] Implement reconstructed weight application to base module and result generation in `src/distributed_training_engine/adapters/canonical_torch/aggragation/canonical_torch_aggregator.py`
-- [X] T013 [US1] Connect `Aggregate()` and `CreateNewVersion()` execution in `src/distributed_training_engine/aggregation/aggregation_orchecstrator.py`
+- [X] T013 [US1] Connect `Aggregate()` and `CreateNewVersion()` execution in `src/distributed_training_engine/aggregation/aggregation_orchestrator.py`
 
 **Checkpoint**: User Story 1 (MVP) is functional and capable of mathematically combining parameter deltas via weighted FedAvg into new weights.
 
@@ -56,7 +56,7 @@
 - [X] T015 [US2] Implement delta tensor key validation against base model state dict (no missing, no unexpected keys) in `src/distributed_training_engine/adapters/canonical_torch/aggragation/canonical_torch_aggregator.py`
 - [X] T016 [US2] Implement delta tensor shape and dtype validation in `src/distributed_training_engine/adapters/canonical_torch/aggragation/canonical_torch_aggregator.py`
 - [X] T017 [US2] Enforce `samplesTrained > 0` validation and all-or-nothing failure handling in `src/distributed_training_engine/adapters/canonical_torch/aggragation/canonical_torch_aggregator.py`
-- [X] T018 [US2] Connect `LoadDelta()` and `ValidateDelta()` execution into lifecycle in `src/distributed_training_engine/aggregation/aggregation_orchecstrator.py`
+- [X] T018 [US2] Connect `LoadDelta()` and `ValidateDelta()` execution into lifecycle in `src/distributed_training_engine/aggregation/aggregation_orchestrator.py`
 
 **Checkpoint**: User Story 2 is functional with comprehensive pre-flight validation protecting against corrupt or mismatched deltas.
 
@@ -70,7 +70,7 @@
 
 - [X] T019 [US3] Register `CanonicalTorchAggregator` for `ModelType.CANONICAL_TORCH` in `src/distributed_training_engine/adapters/canonical_torch/aggragation/__init__.py` and `src/distributed_training_engine/aggregation/__init__.py`
 - [X] T020 [US3] Implement `AggregatorAdapterRegistry.Get()` lookup with contextual `AggregatorAdapterNotFoundError` in `src/distributed_training_engine/aggregation/aggregator_adapter_registery.py`
-- [X] T021 [US3] Verify strict model-agnosticism in `AggregationOrchestrator` ensuring zero PyTorch imports in `src/distributed_training_engine/aggregation/aggregation_orchecstrator.py`
+- [X] T021 [US3] Verify strict model-agnosticism in `AggregationOrchestrator` ensuring zero PyTorch imports in `src/distributed_training_engine/aggregation/aggregation_orchestrator.py`
 
 **Checkpoint**: User Story 3 is functional with complete architectural decoupling between orchestration and framework-specific aggregation.
 
@@ -112,7 +112,7 @@
 
 **Purpose**: Cross-cutting quality checks, structured logging, compilability verification, and regression safety.
 
-- [X] T032 Add structured diagnostic logging across aggregation orchestrator and adapter in `src/distributed_training_engine/aggregation/aggregation_orchecstrator.py` and `src/distributed_training_engine/adapters/canonical_torch/aggragation/canonical_torch_aggregator.py`
+- [X] T032 Add structured diagnostic logging across aggregation orchestrator and adapter in `src/distributed_training_engine/aggregation/aggregation_orchestrator.py` and `src/distributed_training_engine/adapters/canonical_torch/aggragation/canonical_torch_aggregator.py`
 - [X] T033 Run full repository build and syntax compilation checks via `python -m py_compile` across all modified and newly created engine files
 - [X] T034 Execute existing training sample verification (`samples/training_test/setup.py`, `train.py`, `verify.py`) to confirm zero regressions in existing training subsystems
 - [X] T035 Execute complete new sample suite (`samples/distributed_training_test/setup.py`, `partition.py`, `train.py`, `aggregate.py`, `verify.py`) and confirm 100% pass rate
