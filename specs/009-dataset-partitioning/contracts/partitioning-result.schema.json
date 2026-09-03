@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PartitioningResult",
+  "description": "Schema for the Distributed Training Engine PartitioningResult envelope",
+  "type": "object",
+  "required": [
+    "datasetId",
+    "shardCount",
+    "shards"
+  ],
+  "properties": {
+    "datasetId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier of the partitioned dataset"
+    },
+    "shardCount": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total count of shards produced"
+    },
+    "shards": {
+      "type": "array",
+      "description": "List of descriptors for every generated shard",
+      "items": {
+        "type": "object",
+        "required": [
+          "shardId",
+          "sampleCount",
+          "artifactPath"
+        ],
+        "properties": {
+          "shardId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID string uniquely identifying the shard"
+          },
+          "sampleCount": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Number of samples contained within this shard"
+          },
+          "artifactPath": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Path to the serialized shard artifact (.pt file)"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

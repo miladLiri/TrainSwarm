@@ -2,12 +2,16 @@
 Training package for the distributed training engine.
 """
 
-from .model_type import ModelType
+from ..model_type import ModelType
 from .training_task_model import TrainingTask
 from .training_result import TrainingResult, ExecutionInfo, DeltaArtifactInfo
-from .training_adapter import TrainingAdapter
-from .training_adapter_registry import TrainingAdapterRegistry
-from .training_orchestrator import TrainingOrchestrator
+from .trainer_adapter import TrainerAdapter, TrainingAdapter
+from .trainer_adapter_registery import (
+    TrainerAdapterRegistery,
+    TrainerAdapterRegistry,
+    TrainingAdapterRegistry,
+)
+from .training_orchecstrator import TrainingOrchecstrator, TrainingOrchestrator
 from .exceptions import (
     TrainingEngineError,
     UnsupportedTrainingTypeError,
@@ -36,8 +40,12 @@ __all__ = [
     "TrainingResult",
     "ExecutionInfo",
     "DeltaArtifactInfo",
+    "TrainerAdapter",
     "TrainingAdapter",
+    "TrainerAdapterRegistery",
+    "TrainerAdapterRegistry",
     "TrainingAdapterRegistry",
+    "TrainingOrchecstrator",
     "TrainingOrchestrator",
     "TrainingEngineError",
     "UnsupportedTrainingTypeError",
@@ -59,4 +67,3 @@ __all__ = [
     "TensorCompatibilityError",
     "ReconstructionError",
 ]
-
