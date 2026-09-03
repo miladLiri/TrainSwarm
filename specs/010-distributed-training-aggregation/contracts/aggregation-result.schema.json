@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AggregationResult",
+  "description": "Result descriptor returned upon successful completion of a federated model aggregation.",
+  "type": "object",
+  "properties": {
+    "modelId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier of the aggregated model."
+    },
+    "baseModelVersion": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Version number of the base model that was aggregated from."
+    },
+    "newModelVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Version number of the newly created model artifact."
+    },
+    "updatesCount": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Total number of updates included in the successful aggregation."
+    },
+    "modelPath": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Filesystem path to the newly created, published model artifact."
+    }
+  },
+  "required": [
+    "modelId",
+    "baseModelVersion",
+    "newModelVersion",
+    "updatesCount",
+    "modelPath"
+  ],
+  "additionalProperties": false
+}
