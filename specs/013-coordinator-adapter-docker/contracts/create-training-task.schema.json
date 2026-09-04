@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Coordinator Training Task API Contract",
+  "description": "JSON schema for Coordinator POST /api/training-tasks request and response payloads",
+  "definitions": {
+    "CreateTrainingTaskRequest": {
+      "type": "object",
+      "required": [
+        "clientNodeId",
+        "modelId",
+        "modelVersion",
+        "dataSetId",
+        "shardIdList"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "clientNodeId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identifier of the client node initiating the task"
+        },
+        "modelId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identifier of the model being trained"
+        },
+        "modelVersion": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Version of the model checkpoint"
+        },
+        "dataSetId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identifier of the training dataset"
+        },
+        "shardIdList": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "List of dataset shard IDs for which to create training tasks"
+        }
+      }
+    },
+    "CreateTrainingTaskResponse": {
+      "type": "object",
+      "required": [
+        "trainingTaskIds"
+      ],
+      "properties": {
+        "trainingTaskIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": "List of generated GUIDs representing provisioned training tasks"
+        }
+      }
+    }
+  }
+}

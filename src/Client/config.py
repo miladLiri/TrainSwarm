@@ -3,6 +3,8 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
+
 try:
     from dotenv import load_dotenv
     env_path = Path(__file__).resolve().parent / ".env"
@@ -11,31 +13,34 @@ except ImportError:
     pass
 
 
-
 @dataclass(frozen=True)
 class ClientConfig:
-    coordinator_url: str
-    bootstrap_url: str
+    coordinator_address: Optional[str]
     client_node_id: str
     request_timeout_seconds: float
+    coordinator_url: Optional[str] = None
 
 
 def load_config() -> ClientConfig:
-    coordinator_url = os.getenv("COORDINATOR_URL", "http://localhost:5000").rstrip("/")
-    bootstrap_url = os.getenv("BOOTSTRAP_URL", "http://localhost:6000").rstrip("/")
-    client_node_id = os.getenv("CLIENT_NODE_ID", "client-node-dev")
+    coord_addr = os.getenv("COORDINATOR_ADDRESS") or os.getenv("COORDINATOR_URL")
+    if coord_addr:
+        coord_addr = coord_addr.strip().rstrip("/")
+        if not coord_addr:
+            coord_addr = None
     
-    timeout_raw = os.getenv("REQUEST_TIMEOUT_SECONDS", "5.0")
+    client_node_id = os.getenv("CLIENT_NODE_ID", "client-node-dev").strip()
+    
+    timeout_raw = os.getenv("REQUEST_TIMEOUT_SECONDS", "10.0")
     try:
         timeout = float(timeout_raw)
     except ValueError:
-        timeout = 5.0
+        timeout = 10.0
 
     return ClientConfig(
-        coordinator_url=coordinator_url,
-        bootstrap_url=bootstrap_url,
+        coordinator_address=coord_addr,
         client_node_id=client_node_id,
         request_timeout_seconds=timeout,
+        coordinator_url=coord_addr,
     )
 
 

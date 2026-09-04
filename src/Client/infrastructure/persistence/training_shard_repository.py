@@ -6,7 +6,10 @@ import logging
 import sqlite3
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from src.Client.domain.training_shard import TrainingShard, TrainingShardStatus
+try:
+    from domain.training_shard import TrainingShard, TrainingShardStatus
+except ImportError:
+    from src.Client.domain.training_shard import TrainingShard, TrainingShardStatus
 from .database import DatabaseManager
 from .exceptions import (
     DuplicateShardError,
