@@ -2,7 +2,6 @@
 
 from contextlib import contextmanager
 import logging
-import os
 from pathlib import Path
 import sqlite3
 from typing import Generator, Optional, Union
@@ -13,9 +12,6 @@ from .exceptions import (
 )
 
 logger = logging.getLogger(__name__)
-
-ENV_DB_PATH = "TRAINING_CLIENT_DB_PATH"
-DEFAULT_DB_PATH = "./training.db"
 
 CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS training_shards (
@@ -44,36 +40,25 @@ ON training_shards (model_id, model_version, dataset_id, shard_id);
 class DatabaseManager:
     """Manages SQLite database configuration, connection lifecycle, and idempotent schema initialization."""
 
-    def __init__(self, db_path: Optional[Union[str, Path]] = None, timeout: float = 5.0) -> None:
+    def __init__(self, db_path: Union[str, Path] = Path("./training.db"), timeout: float = 5.0) -> None:
         """Initialize DatabaseManager.
 
         Args:
-            db_path: Optional explicit database path. If None, reads from TRAINING_CLIENT_DB_PATH,
-                     falling back silently to './training.db'.
+            db_path: Explicit filesystem path for SQLite database.
             timeout: Timeout in seconds for acquiring database locks.
         """
         self.timeout = timeout
         self.db_path = self._resolve_db_path(db_path)
 
     @staticmethod
-    def _resolve_db_path(db_path: Optional[Union[str, Path]]) -> Path:
-        """Resolve database path from argument or environment variable."""
-        if db_path is not None:
-            raw_path = str(db_path).strip()
-            if not raw_path:
-                raise DatabaseConfigurationError("Database path cannot be an empty string")
-            return Path(raw_path).resolve()
-
-        env_val = os.getenv(ENV_DB_PATH, "").strip()
-        if env_val:
-            return Path(env_val).resolve()
-
-        logger.info(
-            "Environment variable %s is not set; falling back to default '%s'",
-            ENV_DB_PATH,
-            DEFAULT_DB_PATH,
-        )
-        return Path(DEFAULT_DB_PATH).resolve()
+    def _resolve_db_path(db_path: Union[str, Path]) -> Path:
+        """Resolve and validate database path."""
+        if db_path is None:
+            raise DatabaseConfigurationError("Missing required db_path parameter.")
+        raw_path = str(db_path).strip()
+        if not raw_path:
+            raise DatabaseConfigurationError("Database path cannot be an empty string.")
+        return Path(raw_path).resolve()
 
     def initialize(self) -> None:
         """Ensure parent directories exist and create tables and indexes idempotently.

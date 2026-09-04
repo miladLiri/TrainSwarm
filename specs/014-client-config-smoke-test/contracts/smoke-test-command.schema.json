@@ -1,0 +1,58 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trainswarm.org/schemas/smoke-test-command.schema.json",
+  "title": "SmokeTestCommand",
+  "description": "Application command payload requesting training validation and shard sizing calculation.",
+  "type": "object",
+  "required": ["training_task_model", "sample_count"],
+  "additionalProperties": false,
+  "properties": {
+    "training_task_model": {
+      "type": "object",
+      "description": "Serialized TrainingTask model for the distributed training engine.",
+      "required": [
+        "training_task_id",
+        "baseline_model_id",
+        "baseline_model_version",
+        "data_set_id",
+        "data_set_shard_id",
+        "type"
+      ],
+      "properties": {
+        "training_task_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "baseline_model_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "baseline_model_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data_set_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data_set_shard_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "training": {
+          "type": "object",
+          "description": "Adapter-specific training configuration hyperparameters."
+        }
+      }
+    },
+    "sample_count": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of dataset samples the smoke test must train on."
+    }
+  }
+}

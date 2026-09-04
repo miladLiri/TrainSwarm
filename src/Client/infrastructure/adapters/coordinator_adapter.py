@@ -1,7 +1,6 @@
 """Coordinator API adapter for TrainSwarm Client infrastructure."""
 
 import logging
-import os
 from typing import Any, Dict, List, Optional
 import requests
 
@@ -9,8 +8,6 @@ from .create_training_task import CreateTrainingTaskDto
 
 logger = logging.getLogger(__name__)
 
-ENV_COORDINATOR_ADDRESS = "COORDINATOR_ADDRESS"
-FALLBACK_ENV_COORDINATOR_URL = "COORDINATOR_URL"
 DEFAULT_TIMEOUT_SECONDS = 10.0
 
 
@@ -43,20 +40,19 @@ class CoordinatorAdapter:
 
     def __init__(
         self,
-        coordinator_address: Optional[str] = None,
+        coordinator_address: str,
         timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
         session: Optional[requests.Session] = None,
     ) -> None:
         """Initialize CoordinatorAdapter.
 
         Args:
-            coordinator_address: Optional explicit Coordinator base URL. If None, reads from
-                                 COORDINATOR_ADDRESS environment variable.
+            coordinator_address: Explicit Coordinator base URL.
             timeout_seconds: Request timeout in seconds.
             session: Optional reusable requests.Session for connection pooling and testing.
 
         Raises:
-            CoordinatorConfigurationError: If COORDINATOR_ADDRESS is missing, empty, or whitespace.
+            CoordinatorConfigurationError: If coordinator_address is missing, empty, or whitespace.
         """
         self.timeout = float(timeout_seconds)
         self.base_url = self._resolve_address(coordinator_address)
@@ -64,27 +60,18 @@ class CoordinatorAdapter:
         self._owns_session = session is None
 
     @staticmethod
-    def _resolve_address(coordinator_address: Optional[str]) -> str:
-        """Resolve and normalize Coordinator base address from argument or environment."""
-        if coordinator_address is not None:
-            raw = str(coordinator_address).strip()
-            if not raw:
-                raise CoordinatorConfigurationError(
-                    f"Coordinator address cannot be empty. Missing environment variable '{ENV_COORDINATOR_ADDRESS}'."
-                )
-            return raw.rstrip("/")
-
-        env_val = os.getenv(ENV_COORDINATOR_ADDRESS, "").strip()
-        if not env_val:
-            # Check secondary legacy variable without silent fallback to localhost
-            env_val = os.getenv(FALLBACK_ENV_COORDINATOR_URL, "").strip()
-
-        if not env_val:
+    def _resolve_address(coordinator_address: str) -> str:
+        """Resolve and normalize Coordinator base address."""
+        if coordinator_address is None:
             raise CoordinatorConfigurationError(
-                f"Missing required environment variable '{ENV_COORDINATOR_ADDRESS}'."
+                "Missing required coordinator_address parameter."
             )
-
-        return env_val.rstrip("/")
+        raw = str(coordinator_address).strip()
+        if not raw:
+            raise CoordinatorConfigurationError(
+                "Coordinator address cannot be empty."
+            )
+        return raw.rstrip("/")
 
     def create_training_task(self, request: CreateTrainingTaskDto) -> List[str]:
         """Request creation of training tasks from the Coordinator API.

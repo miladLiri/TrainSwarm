@@ -1,17 +1,18 @@
 """Entry point for the TrainSwarm Client console application."""
 
 import logging
+from pathlib import Path
 import sys
-from config import config
-from infrastructure.adapters import (
-    CoordinatorAdapter,
-    CoordinatorConfigurationError,
-)
-from infrastructure.persistence import (
-    DatabaseManager,
-    TrainingShardRepository,
-    DatabaseInitializationError,
-)
+
+CLIENT_DIR = Path(__file__).resolve().parent
+SRC_DIR = CLIENT_DIR.parent
+for p in [str(CLIENT_DIR), str(SRC_DIR)]:
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+from config import ConfigManager, ClientConfigurationError
+from dependency_injection import DIContainer
+from infrastructure.persistence import DatabaseInitializationError
 from presentation.console_ui import ConsoleUI
 
 logging.basicConfig(
@@ -26,29 +27,33 @@ def main() -> int:
     print("       TrainSwarm Training Client       ")
     print("========================================")
 
-    # 1. Initialize Local SQLite Persistence
-    db_manager = DatabaseManager()
+    # 1. Initialize and validate centralized configuration
     try:
-        db_manager.initialize()
-        shard_repository = TrainingShardRepository(db_manager)
-        print(f"[Client] Local persistence initialized at: {db_manager.db_path}")
+        config_manager = ConfigManager()
+        config = config_manager.get_config()
+        print(f"[Client] Configuration loaded successfully for node: {config.client_node_id}")
+    except ClientConfigurationError as e:
+        print(f"[Client] [ERROR] Configuration validation failed: {e}")
+        return 1
+
+    # 2. Initialize Composition Root (Dependency Injection)
+    container = DIContainer(config=config)
+
+    # 3. Initialize Local SQLite Persistence
+    try:
+        container.database_manager.initialize()
+        print(f"[Client] Local persistence initialized at: {container.database_manager.db_path}")
     except DatabaseInitializationError as e:
         print(f"[Client] [ERROR] Failed to initialize local persistence: {e}")
         return 1
 
-    # 2. Initialize Coordinator Adapter
-    try:
-        coordinator_adapter = CoordinatorAdapter(
-            coordinator_address=config.coordinator_address,
-            timeout_seconds=config.request_timeout_seconds,
-        )
-        print(f"[Client] Coordinator adapter initialized for: {coordinator_adapter.base_url}")
-    except CoordinatorConfigurationError as e:
-        print(f"[Client] [WARN] Coordinator adapter not configured at startup: {e}")
-        print("[Client] [INFO] Set COORDINATOR_ADDRESS to enable Coordinator task creation.")
-        coordinator_adapter = None
+    # 4. Report Coordinator Adapter status
+    if container.coordinator_adapter:
+        print(f"[Client] Coordinator adapter initialized for: {container.coordinator_adapter.base_url}")
+    else:
+        print("[Client] [WARN] Coordinator adapter not configured at startup.")
 
-    # 3. Launch Console UI
+    # 5. Launch Console UI
     ui = ConsoleUI()
     ui.run()
     return 0

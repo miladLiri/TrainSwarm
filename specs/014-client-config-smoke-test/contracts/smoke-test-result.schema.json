@@ -1,0 +1,58 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trainswarm.org/schemas/smoke-test-result.schema.json",
+  "title": "SmokeTestResult",
+  "description": "Structured outcome record of a smoke test execution containing timing, throughput, and shard sizing.",
+  "type": "object",
+  "required": [
+    "success",
+    "sample_count",
+    "training_time_seconds",
+    "samples_per_second",
+    "shard_training_time_limit_seconds",
+    "estimated_samples_per_shard",
+    "recommended_samples_per_shard",
+    "error"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "True if training executed without errors; False on any failure."
+    },
+    "sample_count": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of dataset samples processed during the benchmark."
+    },
+    "training_time_seconds": {
+      "type": ["number", "null"],
+      "minimum": 0.0,
+      "description": "Elapsed training execution time in seconds measured by monotonic clock (null on failure)."
+    },
+    "samples_per_second": {
+      "type": ["number", "null"],
+      "minimum": 0.0,
+      "description": "Calculated training throughput in samples per second (null on failure)."
+    },
+    "shard_training_time_limit_seconds": {
+      "type": ["number", "null"],
+      "minimum": 0.0,
+      "description": "Maximum desired shard training duration budget used for sizing."
+    },
+    "estimated_samples_per_shard": {
+      "type": ["integer", "null"],
+      "minimum": 1,
+      "description": "Theoretical maximum sample capacity for a single shard (null on failure)."
+    },
+    "recommended_samples_per_shard": {
+      "type": ["integer", "null"],
+      "minimum": 1,
+      "description": "Recommended partition capacity incorporating configured safety margin (null on failure)."
+    },
+    "error": {
+      "type": ["string", "null"],
+      "description": "Detailed error message and diagnostics if training failed (null on success)."
+    }
+  }
+}
