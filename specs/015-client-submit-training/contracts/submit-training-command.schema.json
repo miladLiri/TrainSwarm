@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SubmitTrainingCommand",
+  "description": "Payload defining a request to validate, smoke test, partition, persist, and register a new distributed training task.",
+  "type": "object",
+  "required": [
+    "model_path",
+    "dataset_path",
+    "model_version",
+    "model_type",
+    "training_config"
+  ],
+  "properties": {
+    "model_path": {
+      "type": "string",
+      "description": "Filesystem path to the base model checkpoint artifact (.pt2)."
+    },
+    "dataset_path": {
+      "type": "string",
+      "description": "Filesystem path to the full input dataset artifact (.pt)."
+    },
+    "model_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Version identifier string of the baseline model."
+    },
+    "model_type": {
+      "type": "string",
+      "enum": [
+        "canonical_torch"
+      ],
+      "description": "Engine adapter type."
+    },
+    "training_config": {
+      "type": "object",
+      "description": "Model-type-specific hyperparameters dictionary.",
+      "required": [
+        "batch_size",
+        "shuffle",
+        "epochs",
+        "gradient_accumulation_steps",
+        "optimizer",
+        "loss"
+      ],
+      "properties": {
+        "batch_size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "shuffle": {
+          "type": "boolean"
+        },
+        "epochs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "gradient_accumulation_steps": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_steps": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "max_grad_norm": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0.0
+        },
+        "seed": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "optimizer": {
+          "type": "object",
+          "required": [
+            "type",
+            "parameters"
+          ],
+          "properties": {
+            "type": {
+              "type": "string"
+            },
+            "parameters": {
+              "type": "object"
+            }
+          }
+        },
+        "loss": {
+          "type": "object",
+          "required": [
+            "type",
+            "parameters"
+          ],
+          "properties": {
+            "type": {
+              "type": "string"
+            },
+            "parameters": {
+              "type": "object"
+            }
+          }
+        },
+        "scheduler": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "type": {
+              "type": "string"
+            },
+            "parameters": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

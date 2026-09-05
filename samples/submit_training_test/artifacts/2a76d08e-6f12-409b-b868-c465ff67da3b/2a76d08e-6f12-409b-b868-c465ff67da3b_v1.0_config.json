@@ -1,0 +1,27 @@
+{
+  "batch_size": 2,
+  "shuffle": true,
+  "epochs": 1,
+  "gradient_accumulation_steps": 1,
+  "optimizer": {
+    "type": "AdamW",
+    "parameters": {
+      "learning_rate": 0.001,
+      "weight_decay": 0.01
+    }
+  },
+  "learning_rate": 0.001,
+  "loss": {
+    "type": "MSELoss",
+    "parameters": {
+      "reduction": "mean"
+    }
+  },
+  "weight_decay": 0.01,
+  "scheduler": {
+    "type": "CosineAnnealingLR",
+    "parameters": {
+      "T_max": 10
+    }
+  }
+}

@@ -9,12 +9,14 @@ ENV PYTHONUNBUFFERED=1
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Create dedicated directory for persistent SQLite storage
-RUN mkdir -p /data
-VOLUME ["/data"]
+# Create dedicated directories for persistent SQLite storage and artifacts
+RUN mkdir -p /data /artifacts
+VOLUME ["/data", "/artifacts"]
 
-# Default container database path pointing to persistent volume
+# Default container paths pointing to persistent volumes
 ENV TRAINING_CLIENT_DB_PATH=/data/training.db
+ENV TRAINING_WORKING_DIRECTORY=/artifacts
+ENV TRAINING_CLIENT_WORKING_DIRECTORY=/artifacts
 
 # Copy application source code
 COPY . .

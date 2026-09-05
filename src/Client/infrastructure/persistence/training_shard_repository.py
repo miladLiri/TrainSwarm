@@ -53,6 +53,12 @@ FROM training_shards
 WHERE model_id = ? AND model_version = ? AND dataset_id = ? AND shard_id = ?;
 """
 
+UPDATE_STATUS_SQL = """
+UPDATE training_shards
+SET status = ?
+WHERE id = ?;
+"""
+
 
 class ITrainingShardRepository(ABC):
     """Abstract interface for TrainingShard local persistence."""
@@ -93,6 +99,19 @@ class ITrainingShardRepository(ABC):
         shard_id: str,
     ) -> Optional[TrainingShard]:
         """Retrieve a TrainingShard by composite key (model_id, model_version, dataset_id, shard_id)."""
+        pass
+
+    @abstractmethod
+    def update_status(self, shard_ids: List[str], status: TrainingShardStatus) -> None:
+        """Atomically update the lifecycle status of multiple existing training shards.
+
+        Args:
+            shard_ids: List of shard primary key IDs (UUID strings).
+            status: Target TrainingShardStatus.
+
+        Raises:
+            PersistenceError: If database operation fails.
+        """
         pass
 
 
@@ -331,3 +350,37 @@ class TrainingShardRepository(ITrainingShardRepository):
             raise PersistenceError(
                 f"Database error querying shard by composite key ({model_id}, {model_version}, {dataset_id}, {shard_id}): {e}"
             ) from e
+
+    def update_status(self, shard_ids: List[str], status: TrainingShardStatus) -> None:
+        """Atomically update the status of training shards identified by shard_ids.
+
+        Args:
+            shard_ids: List of shard primary key IDs.
+            status: New TrainingShardStatus to apply.
+
+        Raises:
+            PersistenceError: If database error occurs during update.
+        """
+        if not shard_ids:
+            return
+
+        if not isinstance(status, TrainingShardStatus):
+            if isinstance(status, str):
+                try:
+                    status = TrainingShardStatus(status.lower())
+                except ValueError as e:
+                    raise ValueError(f"Invalid TrainingShardStatus: {status}") from e
+            else:
+                raise ValueError(f"status must be a TrainingShardStatus instance, got {type(status)}")
+
+        status_val = status.value
+        try:
+            with self.db.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("BEGIN IMMEDIATE;")
+                for sid in shard_ids:
+                    cursor.execute(UPDATE_STATUS_SQL, (status_val, str(sid)))
+                conn.commit()
+            logger.debug("Successfully updated status to %s for %d shards", status_val, len(shard_ids))
+        except sqlite3.Error as e:
+            raise PersistenceError(f"Database error during update_status: {e}") from e

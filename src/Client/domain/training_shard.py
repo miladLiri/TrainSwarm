@@ -11,6 +11,7 @@ import uuid
 
 class TrainingShardStatus(str, Enum):
     """Lifecycle status of a local dataset shard."""
+    CREATED = "created"
     READY = "ready"
     TRAINING = "training"
     COMPLETED = "completed"

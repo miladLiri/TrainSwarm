@@ -87,7 +87,7 @@ class CoordinatorAdapter:
             CoordinatorNetworkError: If transport fails or times out.
             CoordinatorAdapterError: If response body is malformed or missing trainingTaskIds.
         """
-        if not isinstance(request, CreateTrainingTaskDto):
+        if not (isinstance(request, CreateTrainingTaskDto) or getattr(request, "__class__", None).__name__ == "CreateTrainingTaskDto"):
             raise TypeError("request must be an instance of CreateTrainingTaskDto")
 
         url = f"{self.base_url}/api/training-tasks"

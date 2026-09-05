@@ -1,4 +1,4 @@
-﻿"""Centralized configuration manager for TrainSwarm Client."""
+"""Centralized configuration manager for TrainSwarm Client."""
 
 from __future__ import annotations
 import logging
@@ -27,6 +27,7 @@ class ConfigManager:
     ENV_SHARD_TRAINING_TIME_LIMIT = "SHARD_TRAINING_TIME_LIMIT"
     ENV_SHARD_SAFETY_FACTOR = "SHARD_SAFETY_FACTOR"
     ENV_WORKING_DIR = "TRAINING_WORKING_DIRECTORY"
+    FALLBACK_ENV_WORKING_DIR = "TRAINING_CLIENT_WORKING_DIRECTORY"
 
     DEFAULT_CLIENT_NODE_ID = "client-node-dev"
     DEFAULT_REQUEST_TIMEOUT_SECONDS = 10.0
@@ -129,6 +130,8 @@ class ConfigManager:
 
     def _resolve_working_directory(self) -> Path:
         raw = os.getenv(self.ENV_WORKING_DIR, "").strip()
+        if not raw:
+            raw = os.getenv(self.FALLBACK_ENV_WORKING_DIR, "").strip()
         if not raw:
             return Path(self.DEFAULT_WORKING_DIR).resolve()
         return Path(raw).resolve()

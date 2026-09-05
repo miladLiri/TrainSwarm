@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SubmitTrainingResult",
+  "description": "Structured outcome DTO returned by SubmitTrainingCommandHandler.",
+  "type": "object",
+  "required": [
+    "success"
+  ],
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the submission workflow completed successfully through Coordinator task registration."
+    },
+    "model_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Generated model UUID identifier string."
+    },
+    "dataset_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Generated dataset UUID identifier string."
+    },
+    "shard_count": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "description": "Total count of dataset shards created and persisted."
+    },
+    "training_task_ids": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string"
+      },
+      "description": "List of task GUID strings returned by the Coordinator API."
+    },
+    "recommended_samples_per_shard": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "description": "Shard sample capacity calculated from the smoke test throughput benchmark."
+    },
+    "error": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Detailed diagnostic error message if the workflow failed."
+    }
+  },
+  "additionalProperties": false
+}

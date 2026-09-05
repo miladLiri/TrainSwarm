@@ -9,11 +9,13 @@ try:
     from Client.infrastructure.adapters import CoordinatorAdapter
     from Client.infrastructure.persistence import DatabaseManager, TrainingShardRepository
     from Client.application.smoke_test import SmokeTestCommandHandler
+    from Client.application.submit_training import SubmitTrainingCommandHandler
 except ImportError:
     from config import ClientConfig, ConfigManager
     from infrastructure.adapters import CoordinatorAdapter
     from infrastructure.persistence import DatabaseManager, TrainingShardRepository
     from application.smoke_test import SmokeTestCommandHandler
+    from application.submit_training import SubmitTrainingCommandHandler
 
 from distributed_training_engine.training import TrainingOrchestrator
 
@@ -59,6 +61,14 @@ class DIContainer:
             safety_factor=self._config.shard_safety_factor,
         )
 
+        self._submit_training_handler = SubmitTrainingCommandHandler(
+            working_directory=self._config.working_directory,
+            smoke_test_handler=self._smoke_test_handler,
+            shard_repository=self._shard_repository,
+            coordinator_adapter=self._coordinator_adapter,
+            client_node_id=self._config.client_node_id,
+        )
+
     @property
     def config(self) -> ClientConfig:
         """Access the validated configuration."""
@@ -88,3 +98,8 @@ class DIContainer:
     def smoke_test_handler(self) -> SmokeTestCommandHandler:
         """Access the SmokeTestCommandHandler wired with orchestrator and time limit."""
         return self._smoke_test_handler
+
+    @property
+    def submit_training_handler(self) -> SubmitTrainingCommandHandler:
+        """Access the SubmitTrainingCommandHandler wired with orchestrator, persistence, and adapters."""
+        return self._submit_training_handler
