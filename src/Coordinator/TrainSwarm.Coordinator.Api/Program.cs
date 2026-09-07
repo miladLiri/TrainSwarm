@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +22,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
 builder.Services.AddCoordinatorPersistenceServices(connectionString);
 
 builder.Services.AddScoped<TrainingTaskService>();
+builder.Services.AddScoped<TrainerService>();
 
 builder.Services.AddGrpc();
 builder.Services.AddSingleton<ITrainerConnectionManager, TrainerConnectionManager>();
@@ -34,6 +35,7 @@ var app = builder.Build();
 app.MapGrpcService<CoordinatorCommandServiceImpl>();
 app.MapControllers();
 app.MapOpenApi();
+app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }));
 
 using (var scope = app.Services.CreateScope())
 {

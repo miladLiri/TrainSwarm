@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using TrainSwarm.Coordinator.Application.Contracts;
 using TrainSwarm.Coordinator.Domain.Entities;
 
@@ -12,6 +12,7 @@ public class CoordinatorDbContext : DbContext, ICoordinatorDbContext
     }
 
     public DbSet<TrainingTask> TrainingTasks { get; set; }
+    public DbSet<Trainer> Trainers { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

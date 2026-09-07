@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ConnectTrainerRequestAndResponse",
+  "description": "Schemas for Coordinator Connect Trainer REST API endpoint POST /api/trainers/connect",
+  "definitions": {
+    "ConnectTrainerRequest": {
+      "type": "object",
+      "required": ["trainerNodeId"],
+      "properties": {
+        "trainerNodeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "description": "Unique logical node identifier of the connecting trainer instance."
+        }
+      },
+      "additionalProperties": false
+    },
+    "ConnectTrainerResponse": {
+      "type": "object",
+      "required": ["id", "trainerNodeId", "status"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Newly generated GUID assigned to the trainer registration session."
+        },
+        "trainerNodeId": {
+          "type": "string",
+          "description": "Echoed trainer node identifier."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["UNCLEAR", "IDLE", "BUSY"],
+          "description": "Assigned status upon connection (always IDLE upon successful registration)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "ValidationErrorResponse": {
+      "type": "object",
+      "required": ["type", "title", "status"],
+      "properties": {
+        "type": { "type": "string" },
+        "title": { "type": "string" },
+        "status": { "type": "integer", "const": 400 },
+        "errors": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

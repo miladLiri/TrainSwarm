@@ -1,4 +1,4 @@
-﻿# TrainSwarm Coordinator
+# TrainSwarm Coordinator
 
 The **Coordinator** is a control-plane service responsible for distributed training task provisioning, lifecycle coordination, and trainer node command dispatching across the TrainSwarm cluster.
 
@@ -34,7 +34,48 @@ The Coordinator follows **Clean Architecture** with strict unidirectional depend
 1. **`TrainSwarm.Coordinator.Domain`**: Contains core business entities (`TrainingTask`). Zero external framework dependencies.
 2. **`TrainSwarm.Coordinator.Application`**: Contains application use cases (`TrainingTaskService`), DTO contracts (`CreateTrainingTaskDto`, `CreateTrainingTaskResult`), persistence abstractions (`ICoordinatorDbContext`), and relocated trainer command dispatching (`Commands/`).
 3. **`TrainSwarm.Coordinator.Infrastructure`**: Contains persistence implementation (`CoordinatorDbContext`), SQLite database configurations via EF Core Fluent API, and automated migrations.
-4. **`TrainSwarm.Coordinator.Api`**: ASP.NET Core Web API project hosting REST endpoints (`TrainingTaskController`, `CommandDispatchController`), gRPC server (`CoordinatorCommandServiceImpl`), and host configuration.
+4. **`TrainSwarm.Coordinator.Api`**: ASP.NET Core Web API project hosting REST endpoints (`TrainingTaskController`, `TrainerController`, `CommandDispatchController`), gRPC server (`CoordinatorCommandServiceImpl`), and host configuration.
+
+---
+
+## Trainer Registration Feature
+
+The `Trainer` capability manages worker node registration and lifecycle states:
+- **`Trainer` Entity**:
+  - `Id`: Primary Key (`Guid`).
+  - `TrainerNodeId`: Unique node identifier string.
+  - `Status`: `TrainerStatus` enum (`UNCLEAR = 0`, `IDLE = 1`, `BUSY = 2`).
+- **Idempotent Registration**: When `POST /api/trainers/connect` is called with a `TrainerNodeId`, any previous records with the same `TrainerNodeId` are removed and a fresh record is inserted with `Status = IDLE (1)` within an atomic transaction.
+
+### Connect Trainer Endpoint
+
+- **Method**: `POST`
+- **Route**: `/api/trainers/connect`
+- **Content-Type**: `application/json`
+
+#### Request Body (`ConnectTrainerDto`)
+
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `trainerNodeId` | `string` | Yes | Non-null, non-empty, not only whitespace |
+
+#### Example Request
+
+```json
+{
+  "trainerNodeId": "trainer-node-01"
+}
+```
+
+#### Successful Response (`200 OK`)
+
+```json
+{
+  "id": "e6a2fa54-c9b0-4dbb-821b-cfc12489c62a",
+  "trainerNodeId": "trainer-node-01",
+  "status": 1
+}
+```
 
 ---
 

@@ -1,4 +1,4 @@
-"""Command models and enum definitions for the Trainer node."""
+"""Command models and envelope for StartTraining coordinator command."""
 
 from dataclasses import dataclass
 from enum import Enum
@@ -25,10 +25,10 @@ class StartTrainingCommand:
     def from_dict(cls, data: Dict[str, Any]) -> "StartTrainingCommand":
         training_client_node_id = data.get("trainingClientNodeId") or data.get("training_client_node_id")
         session_id = data.get("sessionId") or data.get("session_id")
-        
+
         if not training_client_node_id or not session_id:
             raise ValueError(f"Missing required fields for StartTrainingCommand. Received: {data}")
-            
+
         return cls(
             training_client_node_id=str(training_client_node_id),
             session_id=str(session_id),

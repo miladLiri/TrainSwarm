@@ -1,19 +1,31 @@
-"""Long-lived gRPC command stream listener with automatic 5s reconnection."""
+"""Long-lived gRPC command stream listener with automatic reconnection."""
 
+from __future__ import annotations
 import logging
 import threading
 import time
-from typing import Optional
+from typing import Any, Optional
 
 import grpc
 
 try:
-    from infrastructure import coordinator_commands_pb2, coordinator_commands_pb2_grpc
+    from . import coordinator_commands_pb2, coordinator_commands_pb2_grpc
 except ImportError:
-    import coordinator_commands_pb2, coordinator_commands_pb2_grpc
+    try:
+        from infrastructure.coordinator_connection import (
+            coordinator_commands_pb2,
+            coordinator_commands_pb2_grpc,
+        )
+    except ImportError:
+        import coordinator_commands_pb2, coordinator_commands_pb2_grpc
 
-from application.command_dispatcher import CommandDispatcher
-from domain.commands import CommandEnvelope
+try:
+    from Trainer.application.coordinator_commands.start_training.command import CommandEnvelope
+except ImportError:
+    try:
+        from application.coordinator_commands.start_training.command import CommandEnvelope
+    except ImportError:
+        from domain.commands import CommandEnvelope
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +37,7 @@ class TrainerCommandListener:
         self,
         trainer_node_id: str,
         coordinator_grpc_url: str,
-        command_dispatcher: CommandDispatcher,
+        command_dispatcher: Any,
         reconnect_interval_seconds: float = 5.0,
     ) -> None:
         self.trainer_node_id = trainer_node_id

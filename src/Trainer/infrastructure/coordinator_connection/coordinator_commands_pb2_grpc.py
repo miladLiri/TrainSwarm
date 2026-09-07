@@ -4,9 +4,12 @@ import grpc
 import warnings
 
 try:
-    import coordinator_commands_pb2 as coordinator__commands__pb2
+    from . import coordinator_commands_pb2 as coordinator__commands__pb2
 except ImportError:
-    from infrastructure import coordinator_commands_pb2 as coordinator__commands__pb2
+    try:
+        from infrastructure.coordinator_connection import coordinator_commands_pb2 as coordinator__commands__pb2
+    except ImportError:
+        import coordinator_commands_pb2 as coordinator__commands__pb2
 
 
 GRPC_GENERATED_VERSION = '1.83.1'

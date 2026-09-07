@@ -1,54 +1,67 @@
 """In-memory state management for the Trainer application."""
 
-from typing import Optional
-from domain.models import TrainerNode, PeerSession, TrainerStatus
+from typing import List, Optional
 
 
 class TrainerState:
-    """Manages the in-memory state of the running trainer node."""
+    """Manages the authoritative in-memory state of the running trainer node."""
 
-    def __init__(self, node_id: str, bootstrap_url: str, coordinator_url: str):
-        self._node = TrainerNode(
-            node_id=node_id,
-            bootstrap_url=bootstrap_url,
-            coordinator_url=coordinator_url,
-        )
+    DEFAULT_CLIENT_NODE_ID: str = "trainer-node-01"
 
-    @property
-    def node_id(self) -> str:
-        return self._node.node_id
-
-    @property
-    def bootstrap_url(self) -> str:
-        return self._node.bootstrap_url
+    def __init__(self) -> None:
+        # Strictly hardcoded string constant per specification clarification
+        self._client_node_id: str = self.DEFAULT_CLIENT_NODE_ID
+        self._is_connected: bool = False
+        self._trainer_id: Optional[str] = None
+        self._current_status: str = "INITIALIZED"
+        self._assigned_tasks: List[str] = []
 
     @property
-    def coordinator_url(self) -> str:
-        return self._node.coordinator_url
+    def client_node_id(self) -> str:
+        """Returns the node identifier string constant sent to Coordinator."""
+        return self._client_node_id
 
     @property
-    def status(self) -> TrainerStatus:
-        return self._node.status
+    def is_connected(self) -> bool:
+        """Returns whether the trainer has successfully connected to Coordinator."""
+        return self._is_connected
 
     @property
-    def peer_session(self) -> Optional[PeerSession]:
-        return self._node.peer_session
+    def trainer_id(self) -> Optional[str]:
+        """Returns the registration session GUID assigned by Coordinator."""
+        return self._trainer_id
 
     @property
-    def peer_id(self) -> Optional[str]:
-        return self._node.peer_session.peer_id if self._node.peer_session else None
+    def current_status(self) -> str:
+        """Returns the current operational status of the trainer."""
+        return self._current_status
 
-    def set_peer_session(self, peer_session: PeerSession) -> None:
-        """Updates the registered peer session and status."""
-        self._node.peer_session = peer_session
-        self._node.status = TrainerStatus.REGISTERED
+    @property
+    def assigned_tasks(self) -> List[str]:
+        """Returns a copy of the assigned task identifiers."""
+        return list(self._assigned_tasks)
 
-    def set_status(self, status: TrainerStatus) -> None:
-        """Updates current node status."""
-        self._node.status = status
+    def mark_connected(self, trainer_id: str) -> None:
+        """Marks the trainer as connected with the assigned registration GUID."""
+        self._is_connected = True
+        self._trainer_id = str(trainer_id)
+        self._current_status = "IDLE"
 
-    def clear_peer_session(self) -> None:
-        """Clears the registered peer session and marks disconnected."""
-        self._node.peer_session = None
-        self._node.status = TrainerStatus.DISCONNECTED
+    def mark_disconnected(self) -> None:
+        """Marks the trainer as disconnected."""
+        self._is_connected = False
+        self._current_status = "DISCONNECTED"
 
+    def set_status(self, status: str) -> None:
+        """Updates the current operational status."""
+        self._current_status = status
+
+    def add_assigned_task(self, task_id: str) -> None:
+        """Records an assigned training task."""
+        if task_id not in self._assigned_tasks:
+            self._assigned_tasks.append(task_id)
+
+    def remove_assigned_task(self, task_id: str) -> None:
+        """Removes a completed or cancelled task."""
+        if task_id in self._assigned_tasks:
+            self._assigned_tasks.remove(task_id)
