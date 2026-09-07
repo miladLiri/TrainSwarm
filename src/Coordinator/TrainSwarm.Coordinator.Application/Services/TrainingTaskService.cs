@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ErrorOr;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using TrainSwarm.Coordinator.Application.Contracts;
 using TrainSwarm.Coordinator.Domain.Entities;
@@ -14,11 +15,38 @@ public class TrainingTaskService
 {
     private readonly ICoordinatorDbContext _dbContext;
     private readonly ILogger<TrainingTaskService> _logger;
+    private readonly ISchedulerCursorState _schedulerCursorState;
 
-    public TrainingTaskService(ICoordinatorDbContext dbContext, ILogger<TrainingTaskService> logger)
+    public TrainingTaskService(
+        ICoordinatorDbContext dbContext,
+        ILogger<TrainingTaskService> logger,
+        ISchedulerCursorState schedulerCursorState)
     {
         _dbContext = dbContext;
         _logger = logger;
+        _schedulerCursorState = schedulerCursorState;
+    }
+
+    public async Task<ErrorOr<Success>> ClearTasksAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            var tasks = await _dbContext.TrainingTasks.ToListAsync(ct);
+            if (tasks.Count > 0)
+            {
+                _dbContext.TrainingTasks.RemoveRange(tasks);
+                await _dbContext.SaveChangesAsync(ct);
+            }
+
+            _schedulerCursorState.Reset();
+            _logger.LogInformation("Successfully cleared {Count} training task(s) and reset scheduler cursor.", tasks.Count);
+            return Result.Success;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to clear training tasks.");
+            return Error.Failure("TrainingTasks.ClearFailed", "Failed to clear training tasks.");
+        }
     }
 
     public async Task<ErrorOr<CreateTrainingTaskResult>> CreateTrainingTaskAsync(
@@ -43,13 +71,14 @@ public class TrainingTaskService
         {
             tasks.Add(new TrainingTask
             {
-                TrainingTaskId = Guid.NewGuid(),
+                TrainingTaskId = request.TrainingTaskId ?? Guid.NewGuid(),
                 ClientNodeId = request.ClientNodeId,
                 ModelId = request.ModelId,
                 ModelVersion = request.ModelVersion,
                 DataSetId = request.DataSetId,
                 ShardId = shardId,
-                TrainerNodeId = string.Empty
+                TrainerNodeId = request.TrainerNodeId ?? string.Empty,
+                SubmitTime = request.SubmitTime ?? DateTime.Now
             });
         }
 

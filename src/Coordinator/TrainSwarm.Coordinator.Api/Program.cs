@@ -21,8 +21,10 @@ if (string.IsNullOrWhiteSpace(connectionString))
 
 builder.Services.AddCoordinatorPersistenceServices(connectionString);
 
+builder.Services.AddSingleton<ISchedulerCursorState, SchedulerCursorState>();
 builder.Services.AddScoped<TrainingTaskService>();
 builder.Services.AddScoped<TrainerService>();
+builder.Services.AddScoped<SchedulerService>();
 
 builder.Services.AddGrpc();
 builder.Services.AddSingleton<ITrainerConnectionManager, TrainerConnectionManager>();

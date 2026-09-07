@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using TrainSwarm.Coordinator.Domain.Entities;
 
@@ -30,5 +30,8 @@ public class TrainingTaskConfiguration : IEntityTypeConfiguration<TrainingTask>
         builder.Property(t => t.TrainerNodeId)
             .IsRequired()
             .HasDefaultValue(string.Empty);
+
+        builder.Property(t => t.SubmitTime)
+            .IsRequired();
     }
 }
