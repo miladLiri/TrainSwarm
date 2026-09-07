@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -43,5 +43,18 @@ public class TrainingTaskController : ControllerBase
         };
 
         return StatusCode(StatusCodes.Status201Created, response);
+    }
+
+    [HttpPost("clear")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> ClearTasks(CancellationToken ct = default)
+    {
+        var result = await _trainingTaskService.ClearTasksAsync(ct);
+        if (result.IsError)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = result.FirstError.Description });
+        }
+        return Ok(new { message = "All training tasks cleared and scheduler cursor reset." });
     }
 }

@@ -21,6 +21,27 @@ public class TrainerService
         _logger = logger;
     }
 
+    public async Task<ErrorOr<Success>> ClearTrainersAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            var trainers = await _dbContext.Trainers.ToListAsync(ct);
+            if (trainers.Count > 0)
+            {
+                _dbContext.Trainers.RemoveRange(trainers);
+                await _dbContext.SaveChangesAsync(ct);
+            }
+
+            _logger.LogInformation("Successfully cleared {Count} trainer(s).", trainers.Count);
+            return Result.Success;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to clear trainers.");
+            return Error.Failure("Trainers.ClearFailed", "Failed to clear trainers.");
+        }
+    }
+
     public async Task<ErrorOr<ConnectTrainerResult>> ConnectTrainerAsync(
         ConnectTrainerDto request,
         CancellationToken ct = default)
@@ -56,7 +77,7 @@ public class TrainerService
             {
                 Id = Guid.NewGuid(),
                 TrainerNodeId = trainerNodeId,
-                Status = TrainerStatus.IDLE
+                Status = request.Status ?? TrainerStatus.IDLE
             };
 
             await _dbContext.Trainers.AddAsync(newTrainer, ct);

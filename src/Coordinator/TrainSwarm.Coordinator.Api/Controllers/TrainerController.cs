@@ -45,4 +45,17 @@ public class TrainerController : ControllerBase
 
         return Ok(response);
     }
+
+    [HttpPost("clear")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> ClearTrainers(CancellationToken ct = default)
+    {
+        var result = await _trainerService.ClearTrainersAsync(ct);
+        if (result.IsError)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = result.FirstError.Description });
+        }
+        return Ok(new { message = "All trainers cleared." });
+    }
 }

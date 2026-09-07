@@ -1,0 +1,86 @@
+﻿openapi: 3.0.3
+info:
+  title: Coordinator Scheduler & Clear API
+  description: API contracts for fair model-level round-robin task assignment and table clearance in Coordinator.
+  version: 1.0.0
+paths:
+  /api/scheduler/assign:
+    post:
+      summary: Assign pending training tasks to available idle trainers using fair model-level round-robin rotation.
+      operationId: AssignTasks
+      responses:
+        '200':
+          description: Successfully evaluated and assigned tasks to idle trainers.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AssignedTaskDto'
+        '500':
+          description: Internal server error during scheduling.
+
+  /api/trainers/clear:
+    post:
+      summary: Remove all registered trainer records from the database.
+      operationId: ClearTrainers
+      responses:
+        '200':
+          description: All trainers successfully cleared.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: All trainers cleared.
+        '500':
+          description: Internal server error.
+
+  /api/training-tasks/clear:
+    post:
+      summary: Remove all training task records and reset in-memory scheduler cursor to initial state.
+      operationId: ClearTasks
+      responses:
+        '200':
+          description: All tasks successfully cleared and cursor reset.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: All training tasks cleared and scheduler cursor reset.
+        '500':
+          description: Internal server error.
+
+components:
+  schemas:
+    AssignedTaskDto:
+      type: object
+      required:
+        - trainingTaskId
+        - modelId
+        - trainerNodeId
+        - shardId
+        - submitTime
+      properties:
+        trainingTaskId:
+          type: string
+          format: uuid
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        modelId:
+          type: string
+          example: model-a
+        trainerNodeId:
+          type: string
+          example: T1
+        shardId:
+          type: string
+          example: shard-01
+        submitTime:
+          type: string
+          format: date-time
+          example: 2026-09-07T21:40:00.0000000

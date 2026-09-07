@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace TrainSwarm.Coordinator.Domain.Entities;
 
@@ -11,4 +11,5 @@ public class TrainingTask
     public string DataSetId { get; set; }
     public string ShardId { get; set; }
     public string TrainerNodeId { get; set; } = string.Empty;
+    public DateTime SubmitTime { get; set; }
 }
