@@ -52,8 +52,9 @@ class DIContainer:
                 coordinator_adapter=self._coordinator_adapter,
             )
 
-        # 4. Background Command Listener (wired in Task T027)
+        # 4. Background Command Listener and Dispatcher
         self._command_listener = None
+        self._command_dispatcher = None
 
     @property
     def config(self) -> TrainerConfig:
@@ -74,6 +75,15 @@ class DIContainer:
     def connect_trainer_handler(self) -> Optional[ConnectTrainerCommandHandler]:
         """Access the ConnectTrainerCommandHandler."""
         return self._connect_trainer_handler
+
+    @property
+    def command_dispatcher(self):
+        """Access the command dispatcher."""
+        return self._command_dispatcher
+
+    @command_dispatcher.setter
+    def command_dispatcher(self, dispatcher) -> None:
+        self._command_dispatcher = dispatcher
 
     @property
     def command_listener(self):

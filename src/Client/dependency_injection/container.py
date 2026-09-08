@@ -7,13 +7,13 @@ from typing import Optional
 try:
     from Client.config import ClientConfig, ConfigManager
     from Client.infrastructure.adapters import CoordinatorAdapter
-    from Client.infrastructure.persistence import DatabaseManager, TrainingShardRepository
+    from Client.infrastructure.persistence import DatabaseManager, TrainingShardRepository, ModelRepository
     from Client.application.smoke_test import SmokeTestCommandHandler
     from Client.application.submit_training import SubmitTrainingCommandHandler
 except ImportError:
     from config import ClientConfig, ConfigManager
     from infrastructure.adapters import CoordinatorAdapter
-    from infrastructure.persistence import DatabaseManager, TrainingShardRepository
+    from infrastructure.persistence import DatabaseManager, TrainingShardRepository, ModelRepository
     from application.smoke_test import SmokeTestCommandHandler
     from application.submit_training import SubmitTrainingCommandHandler
 
@@ -37,6 +37,7 @@ class DIContainer:
             timeout=self._config.request_timeout_seconds,
         )
         self._shard_repository = TrainingShardRepository(database_manager=self._database_manager)
+        self._model_repository = ModelRepository(db_manager=self._database_manager)
 
         # 2. Construct adapters
         self._coordinator_adapter: Optional[CoordinatorAdapter] = None
@@ -67,6 +68,7 @@ class DIContainer:
             shard_repository=self._shard_repository,
             coordinator_adapter=self._coordinator_adapter,
             client_node_id=self._config.client_node_id,
+            model_repository=self._model_repository,
         )
 
     @property
@@ -83,6 +85,11 @@ class DIContainer:
     def shard_repository(self) -> TrainingShardRepository:
         """Access the TrainingShardRepository wired to DatabaseManager."""
         return self._shard_repository
+
+    @property
+    def model_repository(self) -> ModelRepository:
+        """Access the ModelRepository wired to DatabaseManager."""
+        return self._model_repository
 
     @property
     def coordinator_adapter(self) -> Optional[CoordinatorAdapter]:

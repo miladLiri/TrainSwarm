@@ -67,29 +67,21 @@ def main(raw_args: Optional[List[str]] = None) -> int:
         model_class=StartTrainingCommand,
         handler=start_training_handler,
     )
-
-    # 4. Start Background gRPC Command Stream Listener
-    command_listener = TrainerCommandListener(
-        trainer_node_id=config.trainer_node_id,
-        coordinator_grpc_url=config.coordinator_grpc_address,
-        command_dispatcher=dispatcher,
-        reconnect_interval_seconds=5.0,
-    )
-    container.command_listener = command_listener
-    command_listener.start()
+    container.command_dispatcher = dispatcher
 
     try:
-        # 5. Execute Presentation Startup Guard (Halts with exit code 1 on failure)
+        # 4. Execute Presentation Startup Guard and start command listener
         run_startup(container)
 
-        # 6. Route to GUI or Headless CLI
+        # 5. Route to GUI or Headless CLI
         if args and args[0] == "gui":
             return launch_gui(container)
 
         ui = ConsoleUI(container=container)
         return ui.run(args)
     finally:
-        command_listener.stop()
+        if container.command_listener:
+            container.command_listener.stop()
 
 
 if __name__ == "__main__":

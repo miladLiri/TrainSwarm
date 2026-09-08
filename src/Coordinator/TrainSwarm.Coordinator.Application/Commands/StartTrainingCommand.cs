@@ -1,12 +1,21 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace TrainSwarm.Coordinator.Application.Commands;
 
 public class StartTrainingCommand
 {
-    [JsonPropertyName("trainingClientNodeId")]
-    public required string TrainingClientNodeId { get; init; }
+    [JsonPropertyName("clientNodeId")]
+    public string ClientNodeId { get; set; } = string.Empty;
 
-    [JsonPropertyName("sessionId")]
-    public required string SessionId { get; init; }
+    [JsonPropertyName("modelId")]
+    public string ModelId { get; set; } = string.Empty;
+
+    [JsonPropertyName("modelVersion")]
+    public string ModelVersion { get; set; } = string.Empty;
+
+    [JsonPropertyName("dataSetId")]
+    public string DataSetId { get; set; } = string.Empty;
+
+    [JsonPropertyName("shardId")]
+    public string ShardId { get; set; } = string.Empty;
 }

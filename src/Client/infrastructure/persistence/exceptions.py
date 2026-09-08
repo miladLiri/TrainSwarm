@@ -34,3 +34,17 @@ class DuplicateShardError(PersistenceError):
 class SerializationError(PersistenceError):
     """Raised when JSON serialization or deserialization of metrics or metadata fails."""
     pass
+
+
+class ModelNotFoundError(PersistenceError):
+    """Raised when a requested model_id does not exist in local persistence."""
+
+    def __init__(self, model_id: str, message: str = ""):
+        self.model_id = model_id
+        super().__init__(message or f"Model with id '{model_id}' was not found in local database.")
+
+
+class ModelPersistenceError(PersistenceError):
+    """Raised when persisting or updating a Model entity fails."""
+    pass
+

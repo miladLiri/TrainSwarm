@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ErrorOr;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using TrainSwarm.Coordinator.Application.Contracts;
 using TrainSwarm.Coordinator.Domain.Entities;
@@ -16,15 +17,19 @@ public class TrainingTaskService
     private readonly ICoordinatorDbContext _dbContext;
     private readonly ILogger<TrainingTaskService> _logger;
     private readonly ISchedulerCursorState _schedulerCursorState;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private static readonly SemaphoreSlim _schedulingLock = new(1, 1);
 
     public TrainingTaskService(
         ICoordinatorDbContext dbContext,
         ILogger<TrainingTaskService> logger,
-        ISchedulerCursorState schedulerCursorState)
+        ISchedulerCursorState schedulerCursorState,
+        IServiceScopeFactory scopeFactory)
     {
         _dbContext = dbContext;
         _logger = logger;
         _schedulerCursorState = schedulerCursorState;
+        _scopeFactory = scopeFactory;
     }
 
     public async Task<ErrorOr<Success>> ClearTasksAsync(CancellationToken ct = default)
@@ -91,6 +96,8 @@ public class TrainingTaskService
                 "Successfully created {ShardCount} training tasks: ClientNodeId={ClientNodeId}, ModelId={ModelId}, ModelVersion={ModelVersion}, DataSetId={DataSetId}",
                 tasks.Count, request.ClientNodeId, request.ModelId, request.ModelVersion, request.DataSetId);
 
+            TriggerBackgroundScheduling();
+
             return new CreateTrainingTaskResult(tasks.Select(t => t.TrainingTaskId));
         }
         catch (Exception ex)
@@ -100,6 +107,42 @@ public class TrainingTaskService
                 request.ClientNodeId, request.ModelId, request.ModelVersion, request.DataSetId);
             throw;
         }
+    }
+
+    private void TriggerBackgroundScheduling()
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _schedulingLock.WaitAsync();
+                try
+                {
+                    using var scope = _scopeFactory.CreateScope();
+                    var scheduler = scope.ServiceProvider.GetRequiredService<SchedulerService>();
+                    var logger = scope.ServiceProvider.GetRequiredService<ILogger<TrainingTaskService>>();
+
+                    logger.LogInformation("[BackgroundScheduler] Starting background task assignment cycle...");
+                    var result = await scheduler.AssignTasksAsync();
+                    if (result.IsError)
+                    {
+                        logger.LogWarning("[BackgroundScheduler] Task assignment cycle ended with error: {Error}", result.FirstError.Description);
+                    }
+                    else
+                    {
+                        logger.LogInformation("[BackgroundScheduler] Task assignment cycle completed successfully: {Count} task(s) assigned.", result.Value.Count);
+                    }
+                }
+                finally
+                {
+                    _schedulingLock.Release();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[BackgroundScheduler] Unhandled exception occurred during background task assignment.");
+            }
+        });
     }
 
     private static List<Error> ValidateRequest(CreateTrainingTaskDto request)

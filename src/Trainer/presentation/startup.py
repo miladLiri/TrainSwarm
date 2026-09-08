@@ -5,17 +5,35 @@ import logging
 import sys
 from typing import Any
 
+try:
+    from Trainer.infrastructure.coordinator_connection import TrainerCommandListener
+    from Trainer.application.coordinator_commands import (
+        CommandDispatcher,
+        CommandType,
+        StartTrainingCommand,
+        StartTrainingHandler,
+    )
+except ImportError:
+    from infrastructure.coordinator_connection import TrainerCommandListener
+    from application.coordinator_commands import (
+        CommandDispatcher,
+        CommandType,
+        StartTrainingCommand,
+        StartTrainingHandler,
+    )
+
 logger = logging.getLogger(__name__)
 
 _has_run = False
 
 
 def run_startup(container: Any) -> bool:
-    """Execute the startup connection routine.
+    """Execute the startup connection routine and command listener.
 
     Guarantees single execution across presentation entry points.
     Invokes ConnectTrainerCommandHandler and aborts application execution with an
     error if the connection fails.
+    Upon successful connection, initializes and starts TrainerCommandListener.
     """
     global _has_run
     if _has_run:
@@ -44,6 +62,33 @@ def run_startup(container: Any) -> bool:
         sys.exit(1)
 
     print(f"[Trainer] Successfully connected to Coordinator! Registration ID: {result.trainer_id}")
+
+    # Initialize and start TrainerCommandListener
+    command_listener = getattr(container, "command_listener", None)
+    if not command_listener:
+        dispatcher = getattr(container, "command_dispatcher", None)
+        if not dispatcher:
+            dispatcher = CommandDispatcher()
+            start_training_handler = StartTrainingHandler(trainer_state=container.state)
+            dispatcher.register_handler(
+                command_type=CommandType.StartTraining,
+                model_class=StartTrainingCommand,
+                handler=start_training_handler,
+            )
+            container.command_dispatcher = dispatcher
+
+        config = container.config
+        command_listener = TrainerCommandListener(
+            trainer_node_id=config.trainer_node_id,
+            coordinator_grpc_url=config.coordinator_grpc_address,
+            command_dispatcher=dispatcher,
+            reconnect_interval_seconds=5.0,
+        )
+        container.command_listener = command_listener
+
+    command_listener.start()
+    print(f"[Trainer] Command listener started for trainer '{container.config.trainer_node_id}'.")
+
     _has_run = True
     return True
 

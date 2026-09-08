@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using ErrorOr;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using TrainSwarm.Coordinator.Application.Commands;
 using TrainSwarm.Coordinator.Application.Contracts;
 using TrainSwarm.Coordinator.Domain.Entities;
 
@@ -15,15 +16,18 @@ public class SchedulerService
 {
     private readonly ICoordinatorDbContext _dbContext;
     private readonly ISchedulerCursorState _cursorState;
+    private readonly ICommandCenter _commandCenter;
     private readonly ILogger<SchedulerService> _logger;
 
     public SchedulerService(
         ICoordinatorDbContext dbContext,
         ISchedulerCursorState cursorState,
+        ICommandCenter commandCenter,
         ILogger<SchedulerService> logger)
     {
         _dbContext = dbContext;
         _cursorState = cursorState;
+        _commandCenter = commandCenter;
         _logger = logger;
     }
 
@@ -86,6 +90,7 @@ public class SchedulerService
         }
 
         var assignedResults = new List<AssignedTaskDto>();
+        var assignedPairs = new List<(TrainingTask Task, Trainer Trainer)>();
         int trainerIndex = 0;
 
         // 5. Fair round-robin assignment loop
@@ -105,6 +110,7 @@ public class SchedulerService
             // Atomic assignment on entity state
             task.TrainerNodeId = trainer.TrainerNodeId;
             trainer.Status = TrainerStatus.BUSY;
+            assignedPairs.Add((task, trainer));
 
             assignedResults.Add(new AssignedTaskDto
             {
@@ -148,6 +154,69 @@ public class SchedulerService
         {
             await _dbContext.SaveChangesAsync(ct);
             _logger.LogInformation("Successfully assigned {Count} tasks to idle trainers.", assignedResults.Count);
+        }
+
+        // 8. Push StartTrainingCommand to newly assigned busy trainers
+        if (assignedPairs.Count > 0)
+        {
+            _logger.LogInformation("[SchedulerService] Dispatching StartTrainingCommand to {Count} assigned trainer(s)...", assignedPairs.Count);
+            foreach (var (assignedTask, assignedTrainer) in assignedPairs)
+            {
+                var command = new StartTrainingCommand
+                {
+                    ClientNodeId = assignedTask.ClientNodeId,
+                    ModelId = assignedTask.ModelId,
+                    ModelVersion = assignedTask.ModelVersion,
+                    DataSetId = assignedTask.DataSetId,
+                    ShardId = assignedTask.ShardId
+                };
+
+                try
+                {
+                    _logger.LogInformation(
+                        "[SchedulerService] Pushing StartTrainingCommand to Trainer '{TrainerId}' [Task='{TaskId}', Model='{ModelId}', Shard='{ShardId}']",
+                        assignedTrainer.TrainerNodeId, assignedTask.TrainingTaskId, assignedTask.ModelId, assignedTask.ShardId);
+
+                    var dispatchResult = await _commandCenter.SendAsync(assignedTrainer.TrainerNodeId, command);
+                    if (!dispatchResult.IsSuccess)
+                    {
+                        _logger.LogWarning(
+                            "[SchedulerService] Failed to push StartTrainingCommand to Trainer '{TrainerId}': {Error}. Reverting assignment...",
+                            assignedTrainer.TrainerNodeId, dispatchResult.FailureReason);
+
+                        assignedTask.TrainerNodeId = string.Empty;
+                        assignedTrainer.Status = TrainerStatus.UNCLEAR;
+                        await _dbContext.SaveChangesAsync(ct);
+
+                        assignedResults.RemoveAll(r => r.TrainingTaskId == assignedTask.TrainingTaskId);
+                    }
+                    else
+                    {
+                        _logger.LogInformation(
+                            "[SchedulerService] Successfully dispatched StartTrainingCommand to Trainer '{TrainerId}'.",
+                            assignedTrainer.TrainerNodeId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex,
+                        "[SchedulerService] Exception while pushing StartTrainingCommand to Trainer '{TrainerId}'. Reverting assignment...",
+                        assignedTrainer.TrainerNodeId);
+
+                    assignedTask.TrainerNodeId = string.Empty;
+                    assignedTrainer.Status = TrainerStatus.UNCLEAR;
+                    try
+                    {
+                        await _dbContext.SaveChangesAsync(ct);
+                    }
+                    catch (Exception dbEx)
+                    {
+                        _logger.LogError(dbEx, "[SchedulerService] Failed to persist rollback for task '{TaskId}'.", assignedTask.TrainingTaskId);
+                    }
+
+                    assignedResults.RemoveAll(r => r.TrainingTaskId == assignedTask.TrainingTaskId);
+                }
+            }
         }
 
         return assignedResults;

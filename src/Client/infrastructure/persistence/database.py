@@ -36,6 +36,22 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_training_shards_logical_shard
 ON training_shards (model_id, model_version, dataset_id, shard_id);
 """
 
+CREATE_MODELS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS models (
+    model_id TEXT PRIMARY KEY NOT NULL,
+    model_type TEXT NOT NULL,
+    model_version TEXT NOT NULL,
+    dataset_id TEXT NOT NULL,
+    model_artifact_path TEXT NOT NULL,
+    training_config_path TEXT NOT NULL
+);
+"""
+
+CREATE_MODELS_INDEX_SQL = """
+CREATE INDEX IF NOT EXISTS ix_models_dataset_id ON models (dataset_id);
+"""
+
+
 
 class DatabaseManager:
     """Manages SQLite database configuration, connection lifecycle, and idempotent schema initialization."""
@@ -78,6 +94,8 @@ class DatabaseManager:
                 cursor = conn.cursor()
                 cursor.execute(CREATE_TABLE_SQL)
                 cursor.execute(CREATE_UNIQUE_INDEX_SQL)
+                cursor.execute(CREATE_MODELS_TABLE_SQL)
+                cursor.execute(CREATE_MODELS_INDEX_SQL)
                 conn.commit()
             logger.info("SQLite database schema initialized successfully at '%s'", self.db_path)
         except sqlite3.Error as e:

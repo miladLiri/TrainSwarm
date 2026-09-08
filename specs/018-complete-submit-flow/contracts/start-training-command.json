@@ -1,0 +1,41 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "StartTrainingCommand",
+  "description": "Command pushed by Coordinator to Trainer via gRPC stream when a training task is assigned.",
+  "type": "object",
+  "properties": {
+    "clientNodeId": {
+      "type": "string",
+      "description": "Unique identifier of the submitting Client node.",
+      "minLength": 1
+    },
+    "modelId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier of the submitted model."
+    },
+    "modelVersion": {
+      "type": "string",
+      "description": "Semantic or incremental version of the model.",
+      "minLength": 1
+    },
+    "dataSetId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier of the associated dataset."
+    },
+    "shardId": {
+      "type": "string",
+      "description": "Specific dataset shard assigned to the trainer.",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "clientNodeId",
+    "modelId",
+    "modelVersion",
+    "dataSetId",
+    "shardId"
+  ],
+  "additionalProperties": false
+}

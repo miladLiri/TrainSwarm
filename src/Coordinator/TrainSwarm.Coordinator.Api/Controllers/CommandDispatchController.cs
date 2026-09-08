@@ -5,8 +5,11 @@ namespace TrainSwarm.Coordinator.Api.Controllers;
 
 public record DispatchStartTrainingDto(
     string TrainerId,
-    string TrainingClientNodeId,
-    string SessionId
+    string ClientNodeId,
+    string ModelId,
+    string ModelVersion,
+    string DataSetId,
+    string ShardId
 );
 
 [ApiController]
@@ -23,8 +26,11 @@ public class CommandDispatchController(ICommandCenter commandCenter) : Controlle
 
         var command = new StartTrainingCommand
         {
-            TrainingClientNodeId = dto.TrainingClientNodeId,
-            SessionId = dto.SessionId
+            ClientNodeId = dto.ClientNodeId,
+            ModelId = dto.ModelId,
+            ModelVersion = dto.ModelVersion,
+            DataSetId = dto.DataSetId,
+            ShardId = dto.ShardId
         };
 
         var result = await commandCenter.SendAsync(dto.TrainerId, command);

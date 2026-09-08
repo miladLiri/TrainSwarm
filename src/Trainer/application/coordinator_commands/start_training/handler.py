@@ -23,12 +23,17 @@ class StartTrainingHandler(ICommandHandler):
 
     def handle(self, command: StartTrainingCommand) -> None:
         logger.info(
-            "[StartTrainingHandler] Received StartTrainingCommand - Session: %s, Client: %s",
-            command.session_id,
-            command.training_client_node_id,
+            "[StartTrainingHandler] Received StartTrainingCommand - ClientNodeId: %s, ModelId: %s, ModelVersion: %s, DataSetId: %s, ShardId: %s",
+            command.client_node_id,
+            command.model_id,
+            command.model_version,
+            command.data_set_id,
+            command.shard_id,
         )
         print(
-            f"\n[Trainer] [COMMAND RECEIVED] StartTraining -> SessionId: {command.session_id}, ClientNodeId: {command.training_client_node_id}"
+            f"\n[Trainer] [COMMAND RECEIVED] StartTraining -> ClientNodeId: {command.client_node_id}, "
+            f"ModelId: {command.model_id}, ModelVersion: {command.model_version}, "
+            f"DataSetId: {command.data_set_id}, ShardId: {command.shard_id}"
         )
         self.trainer_state.set_status("TRAINING")
-        self.trainer_state.add_assigned_task(command.session_id)
+        self.trainer_state.add_assigned_task(command.shard_id)

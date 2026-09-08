@@ -10,8 +10,9 @@ import uuid
 
 try:
     from Client.domain.training_shard import TrainingShard, TrainingShardStatus
+    from Client.domain.model import Model
     from Client.infrastructure.adapters import CoordinatorAdapter, CreateTrainingTaskDto
-    from Client.infrastructure.persistence import ITrainingShardRepository
+    from Client.infrastructure.persistence import ITrainingShardRepository, IModelRepository
     from Client.application.smoke_test import (
         SmokeTestCommand,
         SmokeTestCommandHandler,
@@ -19,8 +20,9 @@ try:
     )
 except ImportError:
     from domain.training_shard import TrainingShard, TrainingShardStatus
+    from domain.model import Model
     from infrastructure.adapters import CoordinatorAdapter, CreateTrainingTaskDto
-    from infrastructure.persistence import ITrainingShardRepository
+    from infrastructure.persistence import ITrainingShardRepository, IModelRepository
     from application.smoke_test import (
         SmokeTestCommand,
         SmokeTestCommandHandler,
@@ -48,12 +50,14 @@ class SubmitTrainingCommandHandler:
         shard_repository: ITrainingShardRepository,
         coordinator_adapter: Optional[CoordinatorAdapter] = None,
         client_node_id: str = "client-node-dev",
+        model_repository: Optional[IModelRepository] = None,
     ) -> None:
         self.working_directory = Path(working_directory).resolve()
         self.smoke_test_handler = smoke_test_handler
         self.shard_repository = shard_repository
         self.coordinator_adapter = coordinator_adapter
         self.client_node_id = client_node_id
+        self.model_repository = model_repository
 
     @staticmethod
     def normalize_training_config(cfg: Dict[str, Any]) -> Dict[str, Any]:
@@ -256,7 +260,32 @@ class SubmitTrainingCommandHandler:
                 error=err,
             )
 
-        # 7. Register tasks with Coordinator API
+        # 7. Persist Model entity in local SQLite database via ModelRepository
+        if self.model_repository:
+            report_progress("Persisting model metadata in local database", 85)
+            model_entity = Model(
+                model_id=model_id,
+                model_type=model_type_str,
+                model_version=command.model_version,
+                dataset_id=dataset_id,
+                model_artifact_path=str(model_dest.resolve()),
+                training_config_path=str(config_dest.resolve()),
+            )
+            try:
+                self.model_repository.save(model_entity)
+            except Exception as exc:
+                err = f"Failed to persist model metadata in local database: {exc}"
+                logger.error("[SubmitTraining] %s", err, exc_info=True)
+                return SubmitTrainingResult(
+                    success=False,
+                    model_id=model_id,
+                    dataset_id=dataset_id,
+                    shard_count=shard_count,
+                    recommended_samples_per_shard=rec_shard_size,
+                    error=err,
+                )
+
+        # 8. Register tasks with Coordinator API
         if not self.coordinator_adapter:
             err = "Coordinator adapter is not configured; shards saved locally with status CREATED."
             logger.warning("[SubmitTraining] %s", err)
@@ -292,7 +321,7 @@ class SubmitTrainingCommandHandler:
                 error=err,
             )
 
-        # 8. Update local shard status in SQLite to READY
+        # 9. Update local shard status in SQLite to READY
         report_progress("Updating local shard statuses to READY", 95)
         shard_pks = [s.id for s in training_shards]
         try:
