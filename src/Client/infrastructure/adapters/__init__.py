@@ -8,6 +8,11 @@ from .coordinator_adapter import (
     CoordinatorNetworkError,
 )
 from .create_training_task import CreateTrainingTaskDto
+from .client_p2p_node_adapter import (
+    ClientP2PNodeAdapter,
+    IClientP2PNodeAdapter,
+    P2PNodeConnectionError,
+)
 
 __all__ = [
     "CoordinatorAdapter",
@@ -16,4 +21,7 @@ __all__ = [
     "CoordinatorApiError",
     "CoordinatorNetworkError",
     "CreateTrainingTaskDto",
+    "ClientP2PNodeAdapter",
+    "IClientP2PNodeAdapter",
+    "P2PNodeConnectionError",
 ]

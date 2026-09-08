@@ -215,13 +215,38 @@ docker build -f src/Coordinator/TrainSwarm.Coordinator.Api/Dockerfile -t trainsw
 
 ### 2. Run with Persistent Storage Volume
 
-Mount a host or Docker named volume to `/data` so SQLite storage persists across container restarts:
+Mount a host or Docker named volume to `/data` so SQLite storage persists across container restarts, and publish both HTTP (REST) and gRPC ports:
 
 ```bash
 docker run --rm -d \
   -p 8080:8080 \
+  -p 8081:8081 \
   -v coordinator_data:/data \
+  -e COORDINATOR_HTTP_PORT=8080 \
+  -e COORDINATOR_GRPC_PORT=8081 \
   -e COORDINATOR_DB_CONNECTION_STRING="Data Source=/data/coordinator.db" \
   --name coordinator \
   trainswarm-coordinator
 ```
+
+---
+
+## Scheduler Integration & Verification
+
+The Coordinator implements an automated round-robin scheduler (`SchedulerService`) that automatically dispatches unassigned `TrainingTask` records to connected, idle worker nodes:
+
+1. **Worker Connection**: Worker nodes connect and register via `POST /api/trainers/connect` and establish a bidirectional gRPC command stream to `CoordinatorCommandService` on port `8081`.
+2. **Task Assignment**: When tasks are created via `POST /api/training-tasks`, the scheduler pairs unassigned shard tasks with available idle trainers and dispatches a `StartTrainingCommand` envelope containing:
+   - `clientNodeId`
+   - `modelId`
+   - `modelVersion`
+   - `dataSetId`
+   - `shardId`
+3. **End-to-End Verification**: The multi-node distributed training verification suite can be executed from:
+   ```bash
+   cd samples/full_distributed_training_test
+   python setup.py
+   python test.py
+   python verify.py
+   ```
+

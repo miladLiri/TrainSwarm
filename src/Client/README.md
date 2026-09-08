@@ -50,9 +50,29 @@ The client is configured via environment variables (or `.env` file):
 | Environment Variable | Description | Default |
 | :--- | :--- | :--- |
 | `COORDINATOR_ADDRESS` | Coordinator REST API base URL (**Required**) | `http://localhost:8080` |
+| `P2P_GRPC_HOST` | Host of the local Go p2p-node sidecar | `127.0.0.1` |
+| `P2P_GRPC_PORT` | Port of the local Go p2p-node sidecar | `50051` |
+| `WORKING_DIR` | Root working directory for staged models and shards | `./Artifacts` (container: `/artifacts`) |
 | `TRAINING_CLIENT_WORKING_DIRECTORY` | Root working directory for staged models and shards | `./Artifacts` (container: `/artifacts`) |
 | `TRAINING_CLIENT_DB_PATH` | Path to local SQLite database file | `./training.db` (container: `/data/training.db`) |
 | `CLIENT_NODE_ID` | Unique identifier for this client node | Auto-generated UUID |
+
+---
+
+## P2P Request Dispatch & Shard Lifecycle
+
+The Client runs an active inbound listener (`ClientP2PNodeAdapter.start_listening()`) connected to its local `p2p-node` over the `ServeClientRequests` bidirectional gRPC stream. When assigned Trainers make P2P calls to the Client, the adapter dispatches them to co-located command handlers:
+
+1. **`GetTrainingTaskCommand`**: Looks up model and training config, queries the assigned `TrainingShard`, updates its status to `training`, sets `trainer_node_id`, and returns the compiled `TrainingTask` envelope.
+2. **`TransferModelCommand`**: Queries `ModelRepository` and returns the file path of the base model checkpoint (`.pt2`) for streaming.
+3. **`TransferShardCommand`**: Queries `TrainingShardRepository` and returns the file path of the assigned dataset shard (`.pt`) for streaming.
+4. **`UpdateModelCommand`**: Receives the trained weights delta safetensors file and `TrainingResult` metadata, records `update_artifact_path` and metrics, and transitions the shard status to `completed`.
+
+### Shard Lifecycle Transitions
+
+```
+[CREATED] --(Coordinator Ack)--> [READY] --(Trainer GetTask)--> [TRAINING] --(Trainer SendUpdate)--> [COMPLETED]
+```
 
 ---
 
@@ -116,23 +136,15 @@ python main.py gui
 
 ---
 
-## Docker Deployment
+## Docker Compose Deployment (Bundled Sidecar)
 
-Build and run the lightweight containerized client:
+Launch Client with its private `p2p-node` sidecar without publishing internal gRPC ports to the host:
 
 ```bash
-# Build the Docker image
-docker build -t trainswarm-client -f src/Client/Dockerfile src/Client
-
-# Run container with persistent volumes
-docker run -d \
-  --name trainswarm-client \
-  --network trainswarm-net \
-  -v $(pwd)/artifacts:/artifacts \
-  -v $(pwd)/data:/data \
-  -e COORDINATOR_ADDRESS=http://coordinator:8080 \
-  trainswarm-client
+cd src/Client
+docker compose up --build -d
 ```
+
 
 ---
 

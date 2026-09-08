@@ -88,9 +88,15 @@ func main() {
 		}
 	}
 
+	workingDir := os.Getenv("WORKING_DIR")
+	if workingDir == "" {
+		workingDir = "."
+	}
+	log.Printf("Working directory: %s", workingDir)
+
 	// Create event bus and gRPC server
 	eventBus := api.NewEventBus()
-	server := api.NewServer(p2pNode, eventBus)
+	server := api.NewServerWithWorkingDir(p2pNode, eventBus, workingDir)
 
 	// Run server in goroutine
 	errCh := make(chan error, 1)

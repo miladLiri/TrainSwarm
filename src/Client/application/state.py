@@ -38,6 +38,19 @@ class ClientState:
         return self._node.node_id
 
     @property
+    def client_node_id(self) -> str:
+        return self._node.node_id
+
+    @property
+    def p2p_node_id(self) -> Optional[str]:
+        return self._node.peer_id
+
+    def set_node_id(self, node_id: str) -> None:
+        """Sets the authoritative P2P node ID."""
+        self._node.node_id = str(node_id)
+        self._node.peer_id = str(node_id)
+
+    @property
     def coordinator_url(self) -> str:
         return self._node.coordinator_url
 

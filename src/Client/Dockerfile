@@ -17,6 +17,9 @@ VOLUME ["/data", "/artifacts"]
 ENV TRAINING_CLIENT_DB_PATH=/data/training.db
 ENV TRAINING_WORKING_DIRECTORY=/artifacts
 ENV TRAINING_CLIENT_WORKING_DIRECTORY=/artifacts
+ENV WORKING_DIR=/artifacts
+ENV P2P_GRPC_HOST=127.0.0.1
+ENV P2P_GRPC_PORT=50051
 
 # Copy application source code
 COPY . .

@@ -6,6 +6,7 @@ import json
 import logging
 from pathlib import Path
 import sys
+import time
 from typing import List, Optional
 
 from application.submit_training import (
@@ -153,7 +154,13 @@ class ConsoleUI:
             print("       TrainSwarm Client Console        ")
             print("========================================")
             print("[Client] Persistence and Coordinator Adapter ready.")
-            print("[Client] Use 'python main.py submit-training --help' to submit tasks.")
-            print("[Client] Use 'python main.py gui' to launch graphical interface.")
+            print("[Client] Inbound P2P request listener active.")
+            print("[Client] Running in headless CLI mode. Press Ctrl+C to exit.")
             print("========================================")
-            return 0
+            sys.stdout.flush()
+            try:
+                while True:
+                    time.sleep(1.0)
+            except (KeyboardInterrupt, SystemExit):
+                print("\n[Client] Shutting down...")
+                return 0

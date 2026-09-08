@@ -30,16 +30,17 @@ INSERT INTO training_shards (
     artifact_path,
     sample_count,
     status,
+    trainer_node_id,
     metrics,
     training_metadata,
     update_artifact_path,
     training_task_id
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 """
 
 SELECT_BY_ID_SQL = """
 SELECT id, model_id, model_type, model_version, dataset_id, shard_id,
-       artifact_path, sample_count, status, metrics, training_metadata,
+       artifact_path, sample_count, status, trainer_node_id, metrics, training_metadata,
        update_artifact_path, training_task_id
 FROM training_shards
 WHERE id = ?;
@@ -47,7 +48,7 @@ WHERE id = ?;
 
 SELECT_BY_SHARD_KEY_SQL = """
 SELECT id, model_id, model_type, model_version, dataset_id, shard_id,
-       artifact_path, sample_count, status, metrics, training_metadata,
+       artifact_path, sample_count, status, trainer_node_id, metrics, training_metadata,
        update_artifact_path, training_task_id
 FROM training_shards
 WHERE model_id = ? AND model_version = ? AND dataset_id = ? AND shard_id = ?;
@@ -57,6 +58,18 @@ UPDATE_STATUS_SQL = """
 UPDATE training_shards
 SET status = ?
 WHERE id = ?;
+"""
+
+UPDATE_SHARD_TRAINING_STATUS_SQL = """
+UPDATE training_shards
+SET status = ?, trainer_node_id = ?
+WHERE model_id = ? AND model_version = ? AND dataset_id = ? AND shard_id = ?;
+"""
+
+UPDATE_SHARD_COMPLETED_SQL = """
+UPDATE training_shards
+SET status = ?, update_artifact_path = ?, metrics = ?
+WHERE model_id = ? AND model_version = ? AND dataset_id = ? AND shard_id = ?;
 """
 
 
@@ -114,6 +127,33 @@ class ITrainingShardRepository(ABC):
         """
         pass
 
+    @abstractmethod
+    def update_shard_training_status(
+        self,
+        model_id: str,
+        model_version: str,
+        dataset_id: str,
+        shard_id: str,
+        trainer_node_id: str,
+        status: TrainingShardStatus = TrainingShardStatus.TRAINING,
+    ) -> None:
+        """Update shard trainer_node_id and status when training starts."""
+        pass
+
+    @abstractmethod
+    def update_shard_completed(
+        self,
+        model_id: str,
+        model_version: str,
+        dataset_id: str,
+        shard_id: str,
+        update_artifact_path: str,
+        metrics: Optional[Dict[str, Any]] = None,
+        status: TrainingShardStatus = TrainingShardStatus.COMPLETED,
+    ) -> None:
+        """Update shard update_artifact_path, metrics, and status when training completes."""
+        pass
+
 
 class TrainingShardRepository(ITrainingShardRepository):
     """SQLite implementation of TrainingShardRepository."""
@@ -169,6 +209,7 @@ class TrainingShardRepository(ITrainingShardRepository):
             artifact_path=row["artifact_path"],
             sample_count=row["sample_count"],
             status=status,
+            trainer_node_id=row["trainer_node_id"] if "trainer_node_id" in row.keys() else None,
             metrics=metrics,
             training_metadata=metadata,
             update_artifact_path=row["update_artifact_path"],
@@ -195,10 +236,11 @@ class TrainingShardRepository(ITrainingShardRepository):
             training_shard.artifact_path,
             training_shard.sample_count,
             training_shard.status.value,
+            training_shard.trainer_node_id,
             self._serialize_json(training_shard.metrics),
             self._serialize_json(training_shard.training_metadata),
             training_shard.update_artifact_path,
-            training_task_id := training_shard.training_task_id,
+            training_shard.training_task_id,
         )
 
         try:
@@ -272,6 +314,7 @@ class TrainingShardRepository(ITrainingShardRepository):
                 shard.artifact_path,
                 shard.sample_count,
                 shard.status.value,
+                shard.trainer_node_id,
                 self._serialize_json(shard.metrics),
                 self._serialize_json(shard.training_metadata),
                 shard.update_artifact_path,
@@ -384,3 +427,64 @@ class TrainingShardRepository(ITrainingShardRepository):
             logger.debug("Successfully updated status to %s for %d shards", status_val, len(shard_ids))
         except sqlite3.Error as e:
             raise PersistenceError(f"Database error during update_status: {e}") from e
+
+    def update_shard_training_status(
+        self,
+        model_id: str,
+        model_version: str,
+        dataset_id: str,
+        shard_id: str,
+        trainer_node_id: str,
+        status: TrainingShardStatus = TrainingShardStatus.TRAINING,
+    ) -> None:
+        """Update shard trainer_node_id and status when training starts."""
+        if not isinstance(status, TrainingShardStatus):
+            status = TrainingShardStatus(str(status).lower())
+        try:
+            with self.db.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    UPDATE_SHARD_TRAINING_STATUS_SQL,
+                    (status.value, trainer_node_id, model_id, str(model_version), dataset_id, shard_id),
+                )
+                conn.commit()
+            logger.debug(
+                "Updated shard (%s, %s, %s, %s) to %s with trainer %s",
+                model_id, model_version, dataset_id, shard_id, status.value, trainer_node_id
+            )
+        except sqlite3.Error as e:
+            raise PersistenceError(
+                f"Database error updating shard training status ({model_id}, {model_version}, {dataset_id}, {shard_id}): {e}"
+            ) from e
+
+    def update_shard_completed(
+        self,
+        model_id: str,
+        model_version: str,
+        dataset_id: str,
+        shard_id: str,
+        update_artifact_path: str,
+        metrics: Optional[Dict[str, Any]] = None,
+        status: TrainingShardStatus = TrainingShardStatus.COMPLETED,
+    ) -> None:
+        """Update shard update_artifact_path, metrics, and status when training completes."""
+        if not isinstance(status, TrainingShardStatus):
+            status = TrainingShardStatus(str(status).lower())
+        metrics_json = self._serialize_json(metrics)
+        try:
+            with self.db.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    UPDATE_SHARD_COMPLETED_SQL,
+                    (status.value, update_artifact_path, metrics_json, model_id, str(model_version), dataset_id, shard_id),
+                )
+                conn.commit()
+            logger.debug(
+                "Updated shard (%s, %s, %s, %s) to %s with artifact %s",
+                model_id, model_version, dataset_id, shard_id, status.value, update_artifact_path
+            )
+        except sqlite3.Error as e:
+            raise PersistenceError(
+                f"Database error updating shard completed status ({model_id}, {model_version}, {dataset_id}, {shard_id}): {e}"
+            ) from e
+

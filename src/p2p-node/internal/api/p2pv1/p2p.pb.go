@@ -207,6 +207,61 @@ func (EventType) EnumDescriptor() ([]byte, []int) {
 	return file_p2p_proto_rawDescGZIP(), []int{2}
 }
 
+type ClientActionType int32
+
+const (
+	ClientActionType_ACTION_UNKNOWN           ClientActionType = 0
+	ClientActionType_ACTION_GET_TRAINING_TASK ClientActionType = 1
+	ClientActionType_ACTION_TRANSFER_MODEL    ClientActionType = 2
+	ClientActionType_ACTION_TRANSFER_SHARD    ClientActionType = 3
+	ClientActionType_ACTION_UPDATE_MODEL      ClientActionType = 4
+)
+
+// Enum value maps for ClientActionType.
+var (
+	ClientActionType_name = map[int32]string{
+		0: "ACTION_UNKNOWN",
+		1: "ACTION_GET_TRAINING_TASK",
+		2: "ACTION_TRANSFER_MODEL",
+		3: "ACTION_TRANSFER_SHARD",
+		4: "ACTION_UPDATE_MODEL",
+	}
+	ClientActionType_value = map[string]int32{
+		"ACTION_UNKNOWN":           0,
+		"ACTION_GET_TRAINING_TASK": 1,
+		"ACTION_TRANSFER_MODEL":    2,
+		"ACTION_TRANSFER_SHARD":    3,
+		"ACTION_UPDATE_MODEL":      4,
+	}
+)
+
+func (x ClientActionType) Enum() *ClientActionType {
+	p := new(ClientActionType)
+	*p = x
+	return p
+}
+
+func (x ClientActionType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ClientActionType) Descriptor() protoreflect.EnumDescriptor {
+	return file_p2p_proto_enumTypes[3].Descriptor()
+}
+
+func (ClientActionType) Type() protoreflect.EnumType {
+	return &file_p2p_proto_enumTypes[3]
+}
+
+func (x ClientActionType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ClientActionType.Descriptor instead.
+func (ClientActionType) EnumDescriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{3}
+}
+
 type GetNodeInfoRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -603,8 +658,8 @@ type GetConnectionStatusResponse struct {
 	Direct          bool                   `protobuf:"varint,4,opt,name=direct,proto3" json:"direct,omitempty"`
 	Transport       string                 `protobuf:"bytes,5,opt,name=transport,proto3" json:"transport,omitempty"`
 	RemoteAddresses []string               `protobuf:"bytes,6,rep,name=remote_addresses,json=remoteAddresses,proto3" json:"remote_addresses,omitempty"`
-	ConnectedAt     int64                  `protobuf:"varint,7,opt,name=connected_at,json=connectedAt,proto3" json:"connected_at,omitempty"`    // Unix timestamp
-	LastActivity    int64                  `protobuf:"varint,8,opt,name=last_activity,json=lastActivity,proto3" json:"last_activity,omitempty"` // Unix timestamp
+	ConnectedAt     int64                  `protobuf:"varint,7,opt,name=connected_at,json=connectedAt,proto3" json:"connected_at,omitempty"`
+	LastActivity    int64                  `protobuf:"varint,8,opt,name=last_activity,json=lastActivity,proto3" json:"last_activity,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -732,13 +787,12 @@ func (*WatchEventsRequest) Descriptor() ([]byte, []int) {
 }
 
 type NodeEvent struct {
-	state      protoimpl.MessageState `protogen:"open.v1"`
-	Type       EventType              `protobuf:"varint,1,opt,name=type,proto3,enum=p2p.v1.EventType" json:"type,omitempty"`
-	PeerId     string                 `protobuf:"bytes,2,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
-	TransferId string                 `protobuf:"bytes,3,opt,name=transfer_id,json=transferId,proto3" json:"transfer_id,omitempty"`
-	Message    string                 `protobuf:"bytes,4,opt,name=message,proto3" json:"message,omitempty"`
-	// Used only when type == EVENT_TRANSFER_REQUESTED
-	Metadata      *TransferMetadata `protobuf:"bytes,5,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Type          EventType              `protobuf:"varint,1,opt,name=type,proto3,enum=p2p.v1.EventType" json:"type,omitempty"`
+	PeerId        string                 `protobuf:"bytes,2,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
+	TransferId    string                 `protobuf:"bytes,3,opt,name=transfer_id,json=transferId,proto3" json:"transfer_id,omitempty"`
+	Message       string                 `protobuf:"bytes,4,opt,name=message,proto3" json:"message,omitempty"`
+	Metadata      *TransferMetadata      `protobuf:"bytes,5,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1408,6 +1462,694 @@ func (x *RequestFileResponse) GetSuccess() bool {
 	return false
 }
 
+type GetTrainingTaskRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ClientPeerId  string                 `protobuf:"bytes,1,opt,name=client_peer_id,json=clientPeerId,proto3" json:"client_peer_id,omitempty"`
+	ModelId       string                 `protobuf:"bytes,2,opt,name=model_id,json=modelId,proto3" json:"model_id,omitempty"`
+	ModelVersion  string                 `protobuf:"bytes,3,opt,name=model_version,json=modelVersion,proto3" json:"model_version,omitempty"`
+	DataSetId     string                 `protobuf:"bytes,4,opt,name=data_set_id,json=dataSetId,proto3" json:"data_set_id,omitempty"`
+	ShardId       string                 `protobuf:"bytes,5,opt,name=shard_id,json=shardId,proto3" json:"shard_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTrainingTaskRequest) Reset() {
+	*x = GetTrainingTaskRequest{}
+	mi := &file_p2p_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTrainingTaskRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTrainingTaskRequest) ProtoMessage() {}
+
+func (x *GetTrainingTaskRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTrainingTaskRequest.ProtoReflect.Descriptor instead.
+func (*GetTrainingTaskRequest) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *GetTrainingTaskRequest) GetClientPeerId() string {
+	if x != nil {
+		return x.ClientPeerId
+	}
+	return ""
+}
+
+func (x *GetTrainingTaskRequest) GetModelId() string {
+	if x != nil {
+		return x.ModelId
+	}
+	return ""
+}
+
+func (x *GetTrainingTaskRequest) GetModelVersion() string {
+	if x != nil {
+		return x.ModelVersion
+	}
+	return ""
+}
+
+func (x *GetTrainingTaskRequest) GetDataSetId() string {
+	if x != nil {
+		return x.DataSetId
+	}
+	return ""
+}
+
+func (x *GetTrainingTaskRequest) GetShardId() string {
+	if x != nil {
+		return x.ShardId
+	}
+	return ""
+}
+
+type GetTrainingTaskResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Success          bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Error            string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	TrainingTaskJson string                 `protobuf:"bytes,3,opt,name=training_task_json,json=trainingTaskJson,proto3" json:"training_task_json,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *GetTrainingTaskResponse) Reset() {
+	*x = GetTrainingTaskResponse{}
+	mi := &file_p2p_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTrainingTaskResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTrainingTaskResponse) ProtoMessage() {}
+
+func (x *GetTrainingTaskResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTrainingTaskResponse.ProtoReflect.Descriptor instead.
+func (*GetTrainingTaskResponse) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *GetTrainingTaskResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *GetTrainingTaskResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *GetTrainingTaskResponse) GetTrainingTaskJson() string {
+	if x != nil {
+		return x.TrainingTaskJson
+	}
+	return ""
+}
+
+type GetModelRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ClientPeerId  string                 `protobuf:"bytes,1,opt,name=client_peer_id,json=clientPeerId,proto3" json:"client_peer_id,omitempty"`
+	ModelId       string                 `protobuf:"bytes,2,opt,name=model_id,json=modelId,proto3" json:"model_id,omitempty"`
+	ModelVersion  string                 `protobuf:"bytes,3,opt,name=model_version,json=modelVersion,proto3" json:"model_version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetModelRequest) Reset() {
+	*x = GetModelRequest{}
+	mi := &file_p2p_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetModelRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetModelRequest) ProtoMessage() {}
+
+func (x *GetModelRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetModelRequest.ProtoReflect.Descriptor instead.
+func (*GetModelRequest) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *GetModelRequest) GetClientPeerId() string {
+	if x != nil {
+		return x.ClientPeerId
+	}
+	return ""
+}
+
+func (x *GetModelRequest) GetModelId() string {
+	if x != nil {
+		return x.ModelId
+	}
+	return ""
+}
+
+func (x *GetModelRequest) GetModelVersion() string {
+	if x != nil {
+		return x.ModelVersion
+	}
+	return ""
+}
+
+type GetModelResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	LocalFilePath string                 `protobuf:"bytes,3,opt,name=local_file_path,json=localFilePath,proto3" json:"local_file_path,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetModelResponse) Reset() {
+	*x = GetModelResponse{}
+	mi := &file_p2p_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetModelResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetModelResponse) ProtoMessage() {}
+
+func (x *GetModelResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetModelResponse.ProtoReflect.Descriptor instead.
+func (*GetModelResponse) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *GetModelResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *GetModelResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *GetModelResponse) GetLocalFilePath() string {
+	if x != nil {
+		return x.LocalFilePath
+	}
+	return ""
+}
+
+type GetShardRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ClientPeerId  string                 `protobuf:"bytes,1,opt,name=client_peer_id,json=clientPeerId,proto3" json:"client_peer_id,omitempty"`
+	ModelId       string                 `protobuf:"bytes,2,opt,name=model_id,json=modelId,proto3" json:"model_id,omitempty"`
+	ModelVersion  string                 `protobuf:"bytes,3,opt,name=model_version,json=modelVersion,proto3" json:"model_version,omitempty"`
+	DataSetId     string                 `protobuf:"bytes,4,opt,name=data_set_id,json=dataSetId,proto3" json:"data_set_id,omitempty"`
+	ShardId       string                 `protobuf:"bytes,5,opt,name=shard_id,json=shardId,proto3" json:"shard_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetShardRequest) Reset() {
+	*x = GetShardRequest{}
+	mi := &file_p2p_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetShardRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetShardRequest) ProtoMessage() {}
+
+func (x *GetShardRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetShardRequest.ProtoReflect.Descriptor instead.
+func (*GetShardRequest) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *GetShardRequest) GetClientPeerId() string {
+	if x != nil {
+		return x.ClientPeerId
+	}
+	return ""
+}
+
+func (x *GetShardRequest) GetModelId() string {
+	if x != nil {
+		return x.ModelId
+	}
+	return ""
+}
+
+func (x *GetShardRequest) GetModelVersion() string {
+	if x != nil {
+		return x.ModelVersion
+	}
+	return ""
+}
+
+func (x *GetShardRequest) GetDataSetId() string {
+	if x != nil {
+		return x.DataSetId
+	}
+	return ""
+}
+
+func (x *GetShardRequest) GetShardId() string {
+	if x != nil {
+		return x.ShardId
+	}
+	return ""
+}
+
+type GetShardResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	LocalFilePath string                 `protobuf:"bytes,3,opt,name=local_file_path,json=localFilePath,proto3" json:"local_file_path,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetShardResponse) Reset() {
+	*x = GetShardResponse{}
+	mi := &file_p2p_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetShardResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetShardResponse) ProtoMessage() {}
+
+func (x *GetShardResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetShardResponse.ProtoReflect.Descriptor instead.
+func (*GetShardResponse) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *GetShardResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *GetShardResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *GetShardResponse) GetLocalFilePath() string {
+	if x != nil {
+		return x.LocalFilePath
+	}
+	return ""
+}
+
+type SendUpdateRequest struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	ClientPeerId       string                 `protobuf:"bytes,1,opt,name=client_peer_id,json=clientPeerId,proto3" json:"client_peer_id,omitempty"`
+	TrainingResultJson string                 `protobuf:"bytes,2,opt,name=training_result_json,json=trainingResultJson,proto3" json:"training_result_json,omitempty"`
+	UpdateArtifactPath string                 `protobuf:"bytes,3,opt,name=update_artifact_path,json=updateArtifactPath,proto3" json:"update_artifact_path,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *SendUpdateRequest) Reset() {
+	*x = SendUpdateRequest{}
+	mi := &file_p2p_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendUpdateRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendUpdateRequest) ProtoMessage() {}
+
+func (x *SendUpdateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendUpdateRequest.ProtoReflect.Descriptor instead.
+func (*SendUpdateRequest) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *SendUpdateRequest) GetClientPeerId() string {
+	if x != nil {
+		return x.ClientPeerId
+	}
+	return ""
+}
+
+func (x *SendUpdateRequest) GetTrainingResultJson() string {
+	if x != nil {
+		return x.TrainingResultJson
+	}
+	return ""
+}
+
+func (x *SendUpdateRequest) GetUpdateArtifactPath() string {
+	if x != nil {
+		return x.UpdateArtifactPath
+	}
+	return ""
+}
+
+type SendUpdateResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SendUpdateResponse) Reset() {
+	*x = SendUpdateResponse{}
+	mi := &file_p2p_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendUpdateResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendUpdateResponse) ProtoMessage() {}
+
+func (x *SendUpdateResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendUpdateResponse.ProtoReflect.Descriptor instead.
+func (*SendUpdateResponse) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *SendUpdateResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *SendUpdateResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+type ClientActionRequest struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	RequestId          string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	ActionType         ClientActionType       `protobuf:"varint,2,opt,name=action_type,json=actionType,proto3,enum=p2p.v1.ClientActionType" json:"action_type,omitempty"`
+	TrainerPeerId      string                 `protobuf:"bytes,3,opt,name=trainer_peer_id,json=trainerPeerId,proto3" json:"trainer_peer_id,omitempty"`
+	ModelId            string                 `protobuf:"bytes,4,opt,name=model_id,json=modelId,proto3" json:"model_id,omitempty"`
+	ModelVersion       string                 `protobuf:"bytes,5,opt,name=model_version,json=modelVersion,proto3" json:"model_version,omitempty"`
+	DatasetId          string                 `protobuf:"bytes,6,opt,name=dataset_id,json=datasetId,proto3" json:"dataset_id,omitempty"`
+	ShardId            string                 `protobuf:"bytes,7,opt,name=shard_id,json=shardId,proto3" json:"shard_id,omitempty"`
+	TrainingResultJson string                 `protobuf:"bytes,8,opt,name=training_result_json,json=trainingResultJson,proto3" json:"training_result_json,omitempty"`
+	SavedUpdatePath    string                 `protobuf:"bytes,9,opt,name=saved_update_path,json=savedUpdatePath,proto3" json:"saved_update_path,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *ClientActionRequest) Reset() {
+	*x = ClientActionRequest{}
+	mi := &file_p2p_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClientActionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClientActionRequest) ProtoMessage() {}
+
+func (x *ClientActionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClientActionRequest.ProtoReflect.Descriptor instead.
+func (*ClientActionRequest) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *ClientActionRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *ClientActionRequest) GetActionType() ClientActionType {
+	if x != nil {
+		return x.ActionType
+	}
+	return ClientActionType_ACTION_UNKNOWN
+}
+
+func (x *ClientActionRequest) GetTrainerPeerId() string {
+	if x != nil {
+		return x.TrainerPeerId
+	}
+	return ""
+}
+
+func (x *ClientActionRequest) GetModelId() string {
+	if x != nil {
+		return x.ModelId
+	}
+	return ""
+}
+
+func (x *ClientActionRequest) GetModelVersion() string {
+	if x != nil {
+		return x.ModelVersion
+	}
+	return ""
+}
+
+func (x *ClientActionRequest) GetDatasetId() string {
+	if x != nil {
+		return x.DatasetId
+	}
+	return ""
+}
+
+func (x *ClientActionRequest) GetShardId() string {
+	if x != nil {
+		return x.ShardId
+	}
+	return ""
+}
+
+func (x *ClientActionRequest) GetTrainingResultJson() string {
+	if x != nil {
+		return x.TrainingResultJson
+	}
+	return ""
+}
+
+func (x *ClientActionRequest) GetSavedUpdatePath() string {
+	if x != nil {
+		return x.SavedUpdatePath
+	}
+	return ""
+}
+
+type ClientActionResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	RequestId        string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	Success          bool                   `protobuf:"varint,2,opt,name=success,proto3" json:"success,omitempty"`
+	Error            string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
+	TrainingTaskJson string                 `protobuf:"bytes,4,opt,name=training_task_json,json=trainingTaskJson,proto3" json:"training_task_json,omitempty"`
+	FilePath         string                 `protobuf:"bytes,5,opt,name=file_path,json=filePath,proto3" json:"file_path,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *ClientActionResponse) Reset() {
+	*x = ClientActionResponse{}
+	mi := &file_p2p_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClientActionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClientActionResponse) ProtoMessage() {}
+
+func (x *ClientActionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClientActionResponse.ProtoReflect.Descriptor instead.
+func (*ClientActionResponse) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *ClientActionResponse) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *ClientActionResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *ClientActionResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *ClientActionResponse) GetTrainingTaskJson() string {
+	if x != nil {
+		return x.TrainingTaskJson
+	}
+	return ""
+}
+
+func (x *ClientActionResponse) GetFilePath() string {
+	if x != nil {
+		return x.FilePath
+	}
+	return ""
+}
+
 var File_p2p_proto protoreflect.FileDescriptor
 
 const file_p2p_proto_rawDesc = "" +
@@ -1503,7 +2245,62 @@ const file_p2p_proto_rawDesc = "" +
 	"\apeer_id\x18\x01 \x01(\tR\x06peerId\x12\x1b\n" +
 	"\tfile_name\x18\x02 \x01(\tR\bfileName\"/\n" +
 	"\x13RequestFileResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess*x\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"\xb9\x01\n" +
+	"\x16GetTrainingTaskRequest\x12$\n" +
+	"\x0eclient_peer_id\x18\x01 \x01(\tR\fclientPeerId\x12\x19\n" +
+	"\bmodel_id\x18\x02 \x01(\tR\amodelId\x12#\n" +
+	"\rmodel_version\x18\x03 \x01(\tR\fmodelVersion\x12\x1e\n" +
+	"\vdata_set_id\x18\x04 \x01(\tR\tdataSetId\x12\x19\n" +
+	"\bshard_id\x18\x05 \x01(\tR\ashardId\"w\n" +
+	"\x17GetTrainingTaskResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\x12,\n" +
+	"\x12training_task_json\x18\x03 \x01(\tR\x10trainingTaskJson\"w\n" +
+	"\x0fGetModelRequest\x12$\n" +
+	"\x0eclient_peer_id\x18\x01 \x01(\tR\fclientPeerId\x12\x19\n" +
+	"\bmodel_id\x18\x02 \x01(\tR\amodelId\x12#\n" +
+	"\rmodel_version\x18\x03 \x01(\tR\fmodelVersion\"j\n" +
+	"\x10GetModelResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\x12&\n" +
+	"\x0flocal_file_path\x18\x03 \x01(\tR\rlocalFilePath\"\xb2\x01\n" +
+	"\x0fGetShardRequest\x12$\n" +
+	"\x0eclient_peer_id\x18\x01 \x01(\tR\fclientPeerId\x12\x19\n" +
+	"\bmodel_id\x18\x02 \x01(\tR\amodelId\x12#\n" +
+	"\rmodel_version\x18\x03 \x01(\tR\fmodelVersion\x12\x1e\n" +
+	"\vdata_set_id\x18\x04 \x01(\tR\tdataSetId\x12\x19\n" +
+	"\bshard_id\x18\x05 \x01(\tR\ashardId\"j\n" +
+	"\x10GetShardResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\x12&\n" +
+	"\x0flocal_file_path\x18\x03 \x01(\tR\rlocalFilePath\"\x9d\x01\n" +
+	"\x11SendUpdateRequest\x12$\n" +
+	"\x0eclient_peer_id\x18\x01 \x01(\tR\fclientPeerId\x120\n" +
+	"\x14training_result_json\x18\x02 \x01(\tR\x12trainingResultJson\x120\n" +
+	"\x14update_artifact_path\x18\x03 \x01(\tR\x12updateArtifactPath\"D\n" +
+	"\x12SendUpdateResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\"\xef\x02\n" +
+	"\x13ClientActionRequest\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x129\n" +
+	"\vaction_type\x18\x02 \x01(\x0e2\x18.p2p.v1.ClientActionTypeR\n" +
+	"actionType\x12&\n" +
+	"\x0ftrainer_peer_id\x18\x03 \x01(\tR\rtrainerPeerId\x12\x19\n" +
+	"\bmodel_id\x18\x04 \x01(\tR\amodelId\x12#\n" +
+	"\rmodel_version\x18\x05 \x01(\tR\fmodelVersion\x12\x1d\n" +
+	"\n" +
+	"dataset_id\x18\x06 \x01(\tR\tdatasetId\x12\x19\n" +
+	"\bshard_id\x18\a \x01(\tR\ashardId\x120\n" +
+	"\x14training_result_json\x18\b \x01(\tR\x12trainingResultJson\x12*\n" +
+	"\x11saved_update_path\x18\t \x01(\tR\x0fsavedUpdatePath\"\xb0\x01\n" +
+	"\x14ClientActionResponse\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x12\x18\n" +
+	"\asuccess\x18\x02 \x01(\bR\asuccess\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\x12,\n" +
+	"\x12training_task_json\x18\x04 \x01(\tR\x10trainingTaskJson\x12\x1b\n" +
+	"\tfile_path\x18\x05 \x01(\tR\bfilePath*x\n" +
 	"\fReachability\x12\x18\n" +
 	"\x14REACHABILITY_UNKNOWN\x10\x00\x12\x17\n" +
 	"\x13REACHABILITY_PUBLIC\x10\x01\x12\x18\n" +
@@ -1529,7 +2326,13 @@ const file_p2p_proto_rawDesc = "" +
 	"\x15EVENT_TRANSFER_FAILED\x10\t\x12\x1c\n" +
 	"\x18EVENT_TRANSFER_CANCELLED\x10\n" +
 	"\x12\x18\n" +
-	"\x14EVENT_FILE_REQUESTED\x10\v2\xe2\x05\n" +
+	"\x14EVENT_FILE_REQUESTED\x10\v*\x93\x01\n" +
+	"\x10ClientActionType\x12\x12\n" +
+	"\x0eACTION_UNKNOWN\x10\x00\x12\x1c\n" +
+	"\x18ACTION_GET_TRAINING_TASK\x10\x01\x12\x19\n" +
+	"\x15ACTION_TRANSFER_MODEL\x10\x02\x12\x19\n" +
+	"\x15ACTION_TRANSFER_SHARD\x10\x03\x12\x17\n" +
+	"\x13ACTION_UPDATE_MODEL\x10\x042\xcf\b\n" +
 	"\aP2PNode\x12F\n" +
 	"\vGetNodeInfo\x12\x1a.p2p.v1.GetNodeInfoRequest\x1a\x1b.p2p.v1.GetNodeInfoResponse\x12:\n" +
 	"\aConnect\x12\x16.p2p.v1.ConnectRequest\x1a\x17.p2p.v1.ConnectResponse\x12C\n" +
@@ -1542,7 +2345,13 @@ const file_p2p_proto_rawDesc = "" +
 	"AcceptFile\x12\x19.p2p.v1.AcceptFileRequest\x1a\x15.p2p.v1.TransferEvent0\x01\x12O\n" +
 	"\x0eCancelTransfer\x12\x1d.p2p.v1.CancelTransferRequest\x1a\x1e.p2p.v1.CancelTransferResponse\x12U\n" +
 	"\x11GetTransferStatus\x12 .p2p.v1.GetTransferStatusRequest\x1a\x1e.p2p.v1.TransferStatusResponse\x12F\n" +
-	"\vRequestFile\x12\x1a.p2p.v1.RequestFileRequest\x1a\x1b.p2p.v1.RequestFileResponseB\x14Z\x12internal/api/p2pv1b\x06proto3"
+	"\vRequestFile\x12\x1a.p2p.v1.RequestFileRequest\x1a\x1b.p2p.v1.RequestFileResponse\x12R\n" +
+	"\x0fGetTrainingTask\x12\x1e.p2p.v1.GetTrainingTaskRequest\x1a\x1f.p2p.v1.GetTrainingTaskResponse\x12=\n" +
+	"\bGetModel\x12\x17.p2p.v1.GetModelRequest\x1a\x18.p2p.v1.GetModelResponse\x12=\n" +
+	"\bGetShard\x12\x17.p2p.v1.GetShardRequest\x1a\x18.p2p.v1.GetShardResponse\x12C\n" +
+	"\n" +
+	"SendUpdate\x12\x19.p2p.v1.SendUpdateRequest\x1a\x1a.p2p.v1.SendUpdateResponse\x12T\n" +
+	"\x13ServeClientRequests\x12\x1c.p2p.v1.ClientActionResponse\x1a\x1b.p2p.v1.ClientActionRequest(\x010\x01B\x14Z\x12internal/api/p2pv1b\x06proto3"
 
 var (
 	file_p2p_proto_rawDescOnce sync.Once
@@ -1556,66 +2365,88 @@ func file_p2p_proto_rawDescGZIP() []byte {
 	return file_p2p_proto_rawDescData
 }
 
-var file_p2p_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_p2p_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_p2p_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_p2p_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
 var file_p2p_proto_goTypes = []any{
 	(Reachability)(0),                   // 0: p2p.v1.Reachability
 	(ConnectionState)(0),                // 1: p2p.v1.ConnectionState
 	(EventType)(0),                      // 2: p2p.v1.EventType
-	(*GetNodeInfoRequest)(nil),          // 3: p2p.v1.GetNodeInfoRequest
-	(*GetNodeInfoResponse)(nil),         // 4: p2p.v1.GetNodeInfoResponse
-	(*ConnectRequest)(nil),              // 5: p2p.v1.ConnectRequest
-	(*ConnectResponse)(nil),             // 6: p2p.v1.ConnectResponse
-	(*DisconnectRequest)(nil),           // 7: p2p.v1.DisconnectRequest
-	(*DisconnectResponse)(nil),          // 8: p2p.v1.DisconnectResponse
-	(*GetConnectionStatusRequest)(nil),  // 9: p2p.v1.GetConnectionStatusRequest
-	(*GetConnectionStatusResponse)(nil), // 10: p2p.v1.GetConnectionStatusResponse
-	(*WatchEventsRequest)(nil),          // 11: p2p.v1.WatchEventsRequest
-	(*NodeEvent)(nil),                   // 12: p2p.v1.NodeEvent
-	(*TransferMetadata)(nil),            // 13: p2p.v1.TransferMetadata
-	(*SendFileRequest)(nil),             // 14: p2p.v1.SendFileRequest
-	(*AcceptFileRequest)(nil),           // 15: p2p.v1.AcceptFileRequest
-	(*TransferEvent)(nil),               // 16: p2p.v1.TransferEvent
-	(*CancelTransferRequest)(nil),       // 17: p2p.v1.CancelTransferRequest
-	(*CancelTransferResponse)(nil),      // 18: p2p.v1.CancelTransferResponse
-	(*GetTransferStatusRequest)(nil),    // 19: p2p.v1.GetTransferStatusRequest
-	(*TransferStatusResponse)(nil),      // 20: p2p.v1.TransferStatusResponse
-	(*RequestFileRequest)(nil),          // 21: p2p.v1.RequestFileRequest
-	(*RequestFileResponse)(nil),         // 22: p2p.v1.RequestFileResponse
+	(ClientActionType)(0),               // 3: p2p.v1.ClientActionType
+	(*GetNodeInfoRequest)(nil),          // 4: p2p.v1.GetNodeInfoRequest
+	(*GetNodeInfoResponse)(nil),         // 5: p2p.v1.GetNodeInfoResponse
+	(*ConnectRequest)(nil),              // 6: p2p.v1.ConnectRequest
+	(*ConnectResponse)(nil),             // 7: p2p.v1.ConnectResponse
+	(*DisconnectRequest)(nil),           // 8: p2p.v1.DisconnectRequest
+	(*DisconnectResponse)(nil),          // 9: p2p.v1.DisconnectResponse
+	(*GetConnectionStatusRequest)(nil),  // 10: p2p.v1.GetConnectionStatusRequest
+	(*GetConnectionStatusResponse)(nil), // 11: p2p.v1.GetConnectionStatusResponse
+	(*WatchEventsRequest)(nil),          // 12: p2p.v1.WatchEventsRequest
+	(*NodeEvent)(nil),                   // 13: p2p.v1.NodeEvent
+	(*TransferMetadata)(nil),            // 14: p2p.v1.TransferMetadata
+	(*SendFileRequest)(nil),             // 15: p2p.v1.SendFileRequest
+	(*AcceptFileRequest)(nil),           // 16: p2p.v1.AcceptFileRequest
+	(*TransferEvent)(nil),               // 17: p2p.v1.TransferEvent
+	(*CancelTransferRequest)(nil),       // 18: p2p.v1.CancelTransferRequest
+	(*CancelTransferResponse)(nil),      // 19: p2p.v1.CancelTransferResponse
+	(*GetTransferStatusRequest)(nil),    // 20: p2p.v1.GetTransferStatusRequest
+	(*TransferStatusResponse)(nil),      // 21: p2p.v1.TransferStatusResponse
+	(*RequestFileRequest)(nil),          // 22: p2p.v1.RequestFileRequest
+	(*RequestFileResponse)(nil),         // 23: p2p.v1.RequestFileResponse
+	(*GetTrainingTaskRequest)(nil),      // 24: p2p.v1.GetTrainingTaskRequest
+	(*GetTrainingTaskResponse)(nil),     // 25: p2p.v1.GetTrainingTaskResponse
+	(*GetModelRequest)(nil),             // 26: p2p.v1.GetModelRequest
+	(*GetModelResponse)(nil),            // 27: p2p.v1.GetModelResponse
+	(*GetShardRequest)(nil),             // 28: p2p.v1.GetShardRequest
+	(*GetShardResponse)(nil),            // 29: p2p.v1.GetShardResponse
+	(*SendUpdateRequest)(nil),           // 30: p2p.v1.SendUpdateRequest
+	(*SendUpdateResponse)(nil),          // 31: p2p.v1.SendUpdateResponse
+	(*ClientActionRequest)(nil),         // 32: p2p.v1.ClientActionRequest
+	(*ClientActionResponse)(nil),        // 33: p2p.v1.ClientActionResponse
 }
 var file_p2p_proto_depIdxs = []int32{
 	0,  // 0: p2p.v1.GetNodeInfoResponse.reachability:type_name -> p2p.v1.Reachability
 	1,  // 1: p2p.v1.ConnectResponse.state:type_name -> p2p.v1.ConnectionState
 	1,  // 2: p2p.v1.GetConnectionStatusResponse.state:type_name -> p2p.v1.ConnectionState
 	2,  // 3: p2p.v1.NodeEvent.type:type_name -> p2p.v1.EventType
-	13, // 4: p2p.v1.NodeEvent.metadata:type_name -> p2p.v1.TransferMetadata
+	14, // 4: p2p.v1.NodeEvent.metadata:type_name -> p2p.v1.TransferMetadata
 	2,  // 5: p2p.v1.TransferEvent.state:type_name -> p2p.v1.EventType
 	2,  // 6: p2p.v1.TransferStatusResponse.state:type_name -> p2p.v1.EventType
-	3,  // 7: p2p.v1.P2PNode.GetNodeInfo:input_type -> p2p.v1.GetNodeInfoRequest
-	5,  // 8: p2p.v1.P2PNode.Connect:input_type -> p2p.v1.ConnectRequest
-	7,  // 9: p2p.v1.P2PNode.Disconnect:input_type -> p2p.v1.DisconnectRequest
-	9,  // 10: p2p.v1.P2PNode.GetConnectionStatus:input_type -> p2p.v1.GetConnectionStatusRequest
-	11, // 11: p2p.v1.P2PNode.WatchEvents:input_type -> p2p.v1.WatchEventsRequest
-	14, // 12: p2p.v1.P2PNode.SendFile:input_type -> p2p.v1.SendFileRequest
-	15, // 13: p2p.v1.P2PNode.AcceptFile:input_type -> p2p.v1.AcceptFileRequest
-	17, // 14: p2p.v1.P2PNode.CancelTransfer:input_type -> p2p.v1.CancelTransferRequest
-	19, // 15: p2p.v1.P2PNode.GetTransferStatus:input_type -> p2p.v1.GetTransferStatusRequest
-	21, // 16: p2p.v1.P2PNode.RequestFile:input_type -> p2p.v1.RequestFileRequest
-	4,  // 17: p2p.v1.P2PNode.GetNodeInfo:output_type -> p2p.v1.GetNodeInfoResponse
-	6,  // 18: p2p.v1.P2PNode.Connect:output_type -> p2p.v1.ConnectResponse
-	8,  // 19: p2p.v1.P2PNode.Disconnect:output_type -> p2p.v1.DisconnectResponse
-	10, // 20: p2p.v1.P2PNode.GetConnectionStatus:output_type -> p2p.v1.GetConnectionStatusResponse
-	12, // 21: p2p.v1.P2PNode.WatchEvents:output_type -> p2p.v1.NodeEvent
-	16, // 22: p2p.v1.P2PNode.SendFile:output_type -> p2p.v1.TransferEvent
-	16, // 23: p2p.v1.P2PNode.AcceptFile:output_type -> p2p.v1.TransferEvent
-	18, // 24: p2p.v1.P2PNode.CancelTransfer:output_type -> p2p.v1.CancelTransferResponse
-	20, // 25: p2p.v1.P2PNode.GetTransferStatus:output_type -> p2p.v1.TransferStatusResponse
-	22, // 26: p2p.v1.P2PNode.RequestFile:output_type -> p2p.v1.RequestFileResponse
-	17, // [17:27] is the sub-list for method output_type
-	7,  // [7:17] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	3,  // 7: p2p.v1.ClientActionRequest.action_type:type_name -> p2p.v1.ClientActionType
+	4,  // 8: p2p.v1.P2PNode.GetNodeInfo:input_type -> p2p.v1.GetNodeInfoRequest
+	6,  // 9: p2p.v1.P2PNode.Connect:input_type -> p2p.v1.ConnectRequest
+	8,  // 10: p2p.v1.P2PNode.Disconnect:input_type -> p2p.v1.DisconnectRequest
+	10, // 11: p2p.v1.P2PNode.GetConnectionStatus:input_type -> p2p.v1.GetConnectionStatusRequest
+	12, // 12: p2p.v1.P2PNode.WatchEvents:input_type -> p2p.v1.WatchEventsRequest
+	15, // 13: p2p.v1.P2PNode.SendFile:input_type -> p2p.v1.SendFileRequest
+	16, // 14: p2p.v1.P2PNode.AcceptFile:input_type -> p2p.v1.AcceptFileRequest
+	18, // 15: p2p.v1.P2PNode.CancelTransfer:input_type -> p2p.v1.CancelTransferRequest
+	20, // 16: p2p.v1.P2PNode.GetTransferStatus:input_type -> p2p.v1.GetTransferStatusRequest
+	22, // 17: p2p.v1.P2PNode.RequestFile:input_type -> p2p.v1.RequestFileRequest
+	24, // 18: p2p.v1.P2PNode.GetTrainingTask:input_type -> p2p.v1.GetTrainingTaskRequest
+	26, // 19: p2p.v1.P2PNode.GetModel:input_type -> p2p.v1.GetModelRequest
+	28, // 20: p2p.v1.P2PNode.GetShard:input_type -> p2p.v1.GetShardRequest
+	30, // 21: p2p.v1.P2PNode.SendUpdate:input_type -> p2p.v1.SendUpdateRequest
+	33, // 22: p2p.v1.P2PNode.ServeClientRequests:input_type -> p2p.v1.ClientActionResponse
+	5,  // 23: p2p.v1.P2PNode.GetNodeInfo:output_type -> p2p.v1.GetNodeInfoResponse
+	7,  // 24: p2p.v1.P2PNode.Connect:output_type -> p2p.v1.ConnectResponse
+	9,  // 25: p2p.v1.P2PNode.Disconnect:output_type -> p2p.v1.DisconnectResponse
+	11, // 26: p2p.v1.P2PNode.GetConnectionStatus:output_type -> p2p.v1.GetConnectionStatusResponse
+	13, // 27: p2p.v1.P2PNode.WatchEvents:output_type -> p2p.v1.NodeEvent
+	17, // 28: p2p.v1.P2PNode.SendFile:output_type -> p2p.v1.TransferEvent
+	17, // 29: p2p.v1.P2PNode.AcceptFile:output_type -> p2p.v1.TransferEvent
+	19, // 30: p2p.v1.P2PNode.CancelTransfer:output_type -> p2p.v1.CancelTransferResponse
+	21, // 31: p2p.v1.P2PNode.GetTransferStatus:output_type -> p2p.v1.TransferStatusResponse
+	23, // 32: p2p.v1.P2PNode.RequestFile:output_type -> p2p.v1.RequestFileResponse
+	25, // 33: p2p.v1.P2PNode.GetTrainingTask:output_type -> p2p.v1.GetTrainingTaskResponse
+	27, // 34: p2p.v1.P2PNode.GetModel:output_type -> p2p.v1.GetModelResponse
+	29, // 35: p2p.v1.P2PNode.GetShard:output_type -> p2p.v1.GetShardResponse
+	31, // 36: p2p.v1.P2PNode.SendUpdate:output_type -> p2p.v1.SendUpdateResponse
+	32, // 37: p2p.v1.P2PNode.ServeClientRequests:output_type -> p2p.v1.ClientActionRequest
+	23, // [23:38] is the sub-list for method output_type
+	8,  // [8:23] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_p2p_proto_init() }
@@ -1628,8 +2459,8 @@ func file_p2p_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_p2p_proto_rawDesc), len(file_p2p_proto_rawDesc)),
-			NumEnums:      3,
-			NumMessages:   20,
+			NumEnums:      4,
+			NumMessages:   30,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

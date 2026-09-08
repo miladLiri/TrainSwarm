@@ -6,16 +6,28 @@ from typing import Optional
 
 try:
     from Client.config import ClientConfig, ConfigManager
-    from Client.infrastructure.adapters import CoordinatorAdapter
+    from Client.application.state import ClientState
+    from Client.infrastructure.adapters import CoordinatorAdapter, ClientP2PNodeAdapter
     from Client.infrastructure.persistence import DatabaseManager, TrainingShardRepository, ModelRepository
     from Client.application.smoke_test import SmokeTestCommandHandler
     from Client.application.submit_training import SubmitTrainingCommandHandler
+    from Client.application.commands.set_node_id import SetNodeIdCommandHandler
+    from Client.application.commands.get_training_task import GetTrainingTaskCommandHandler
+    from Client.application.commands.transfer_model import TransferModelCommandHandler
+    from Client.application.commands.transfer_shard import TransferShardCommandHandler
+    from Client.application.commands.update_model import UpdateModelCommandHandler
 except ImportError:
     from config import ClientConfig, ConfigManager
-    from infrastructure.adapters import CoordinatorAdapter
+    from application.state import ClientState
+    from infrastructure.adapters import CoordinatorAdapter, ClientP2PNodeAdapter
     from infrastructure.persistence import DatabaseManager, TrainingShardRepository, ModelRepository
     from application.smoke_test import SmokeTestCommandHandler
     from application.submit_training import SubmitTrainingCommandHandler
+    from application.commands.set_node_id import SetNodeIdCommandHandler
+    from application.commands.get_training_task import GetTrainingTaskCommandHandler
+    from application.commands.transfer_model import TransferModelCommandHandler
+    from application.commands.transfer_shard import TransferShardCommandHandler
+    from application.commands.update_model import UpdateModelCommandHandler
 
 from distributed_training_engine.training import TrainingOrchestrator
 
@@ -70,6 +82,71 @@ class DIContainer:
             client_node_id=self._config.client_node_id,
             model_repository=self._model_repository,
         )
+
+        # 5. State Management & P2P Infrastructure
+        self._state = ClientState(
+            node_id=self._config.client_node_id,
+            coordinator_url=self._config.coordinator_address or "",
+        )
+        self._p2p_node_adapter = ClientP2PNodeAdapter()
+        self._set_node_id_handler = SetNodeIdCommandHandler(
+            client_state=self._state,
+            p2p_node_adapter=self._p2p_node_adapter,
+            client_config=self._config,
+        )
+        self._get_training_task_handler = GetTrainingTaskCommandHandler(
+            model_repository=self._model_repository,
+            shard_repository=self._shard_repository,
+        )
+        self._transfer_model_handler = TransferModelCommandHandler(
+            model_repository=self._model_repository,
+        )
+        self._transfer_shard_handler = TransferShardCommandHandler(
+            shard_repository=self._shard_repository,
+        )
+        self._update_model_handler = UpdateModelCommandHandler(
+            shard_repository=self._shard_repository,
+        )
+
+        self._p2p_node_adapter.get_training_task_handler = self._get_training_task_handler
+        self._p2p_node_adapter.transfer_model_handler = self._transfer_model_handler
+        self._p2p_node_adapter.transfer_shard_handler = self._transfer_shard_handler
+        self._p2p_node_adapter.update_model_handler = self._update_model_handler
+
+    @property
+    def state(self) -> ClientState:
+        """Access in-memory application state."""
+        return self._state
+
+    @property
+    def p2p_node_adapter(self) -> ClientP2PNodeAdapter:
+        """Access ClientP2PNodeAdapter."""
+        return self._p2p_node_adapter
+
+    @property
+    def set_node_id_handler(self) -> SetNodeIdCommandHandler:
+        """Access SetNodeIdCommandHandler."""
+        return self._set_node_id_handler
+
+    @property
+    def get_training_task_handler(self) -> GetTrainingTaskCommandHandler:
+        """Access GetTrainingTaskCommandHandler."""
+        return self._get_training_task_handler
+
+    @property
+    def transfer_model_handler(self) -> TransferModelCommandHandler:
+        """Access TransferModelCommandHandler."""
+        return self._transfer_model_handler
+
+    @property
+    def transfer_shard_handler(self) -> TransferShardCommandHandler:
+        """Access TransferShardCommandHandler."""
+        return self._transfer_shard_handler
+
+    @property
+    def update_model_handler(self) -> UpdateModelCommandHandler:
+        """Access UpdateModelCommandHandler."""
+        return self._update_model_handler
 
     @property
     def config(self) -> ClientConfig:

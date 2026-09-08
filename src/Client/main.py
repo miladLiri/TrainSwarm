@@ -69,6 +69,18 @@ def main(raw_args: Optional[List[str]] = None) -> int:
     # 2. Initialize Composition Root (Dependency Injection)
     container = DIContainer(config=config)
 
+    # 2.5. P2P Node Identity Discovery & Fail-Fast Startup Guard
+    try:
+        p2p_node_id = container.set_node_id_handler.handle()
+        print(f"[Client] P2P sidecar node ID verified: {p2p_node_id}")
+    except Exception as e:
+        print(f"[Client] [FATAL] Failed to connect to local p2p-node sidecar: {e}", file=sys.stderr)
+        logger.error("p2p-node sidecar connection failed during boot: %s", e, exc_info=True)
+        return 1
+
+    # Start listening for inbound P2P requests
+    container.p2p_node_adapter.start_listening()
+
     # 3. Initialize Local SQLite Persistence
     try:
         container.database_manager.initialize()
@@ -76,6 +88,7 @@ def main(raw_args: Optional[List[str]] = None) -> int:
             print(f"[Client] Local persistence initialized at: {container.database_manager.db_path}")
     except DatabaseInitializationError as e:
         print(f"[Client] [ERROR] Failed to initialize local persistence: {e}", file=sys.stderr)
+        container.p2p_node_adapter.stop_listening()
         return 1
 
     # 4. Report Coordinator Adapter status
@@ -85,12 +98,15 @@ def main(raw_args: Optional[List[str]] = None) -> int:
         else:
             print("[Client] [WARN] Coordinator adapter not configured at startup.")
 
-    # 5. Route to GUI or Console UI
-    if args and args[0] == "gui":
-        return launch_gui(container)
+    try:
+        # 5. Route to GUI or Console UI
+        if args and args[0] == "gui":
+            return launch_gui(container)
 
-    ui = ConsoleUI(submit_training_handler=container.submit_training_handler)
-    return ui.run(args)
+        ui = ConsoleUI(submit_training_handler=container.submit_training_handler)
+        return ui.run(args)
+    finally:
+        container.p2p_node_adapter.stop_listening()
 
 
 if __name__ == "__main__":

@@ -31,6 +31,7 @@ class TrainingShard:
     artifact_path: str
     sample_count: int
     status: TrainingShardStatus = TrainingShardStatus.READY
+    trainer_node_id: Optional[str] = None
     metrics: Optional[Dict[str, Any]] = None
     training_metadata: Optional[Dict[str, Any]] = None
     update_artifact_path: Optional[str] = None
@@ -82,6 +83,9 @@ class TrainingShard:
                 raise ValueError(
                     f"TrainingShard.status must be a TrainingShardStatus instance, got {type(self.status)}"
                 )
+
+        if self.trainer_node_id is not None and not isinstance(self.trainer_node_id, str):
+            raise ValueError("TrainingShard.trainer_node_id must be a string or None")
 
         if self.metrics is not None and not isinstance(self.metrics, dict):
             raise ValueError("TrainingShard.metrics must be a dictionary or None")

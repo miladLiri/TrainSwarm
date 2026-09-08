@@ -3,8 +3,9 @@ package api
 import (
 	"context"
 	"fmt"
-	"net"
 	"log"
+	"net"
+	"sync"
 	"time"
 
 	"github.com/multiformats/go-multiaddr"
@@ -21,17 +22,32 @@ type Server struct {
 	node            *node.Node
 	eventBus        *EventBus
 	transferManager *transfer.Manager
+	clientStreamMu  sync.Mutex
+	clientStream    p2pv1.P2PNode_ServeClientRequestsServer
+	pendingActions  map[string]chan *p2pv1.ClientActionResponse
 }
 
 func NewServer(n *node.Node, eb *EventBus) *Server {
-	tm := transfer.NewManager(n.Host, func(ev *p2pv1.NodeEvent) {
+	return NewServerWithWorkingDir(n, eb, ".")
+}
+
+func NewServerWithWorkingDir(n *node.Node, eb *EventBus, workingDir string) *Server {
+	s := &Server{
+		node:           n,
+		eventBus:       eb,
+		pendingActions: make(map[string]chan *p2pv1.ClientActionResponse),
+	}
+	tm := transfer.NewManagerWithConfig(n.Host, workingDir, func() string {
+		if n.RelayPeerID != "" {
+			return n.RelayPeerID.String()
+		}
+		return ""
+	}, func(ev *p2pv1.NodeEvent) {
 		eb.Broadcast(ev)
 	})
-	return &Server{
-		node:            n,
-		eventBus:        eb,
-		transferManager: tm,
-	}
+	tm.SetClientDispatcher(s.DispatchClientAction)
+	s.transferManager = tm
+	return s
 }
 
 // Start serves the gRPC API on 0.0.0.0.
@@ -251,3 +267,119 @@ func (s *Server) RequestFile(ctx context.Context, req *p2pv1.RequestFileRequest)
 
 	return &p2pv1.RequestFileResponse{Success: true}, nil
 }
+
+func (s *Server) DispatchClientAction(ctx context.Context, req *p2pv1.ClientActionRequest) (*p2pv1.ClientActionResponse, error) {
+	s.clientStreamMu.Lock()
+	if s.clientStream == nil {
+		s.clientStreamMu.Unlock()
+		return nil, fmt.Errorf("client application is not connected to p2p-node via ServeClientRequests")
+	}
+	respCh := make(chan *p2pv1.ClientActionResponse, 1)
+	s.pendingActions[req.RequestId] = respCh
+	stream := s.clientStream
+	s.clientStreamMu.Unlock()
+
+	defer func() {
+		s.clientStreamMu.Lock()
+		delete(s.pendingActions, req.RequestId)
+		s.clientStreamMu.Unlock()
+	}()
+
+	if err := stream.Send(req); err != nil {
+		return nil, fmt.Errorf("failed to send action request to client application: %w", err)
+	}
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case resp := <-respCh:
+		return resp, nil
+	}
+}
+
+func (s *Server) ServeClientRequests(stream p2pv1.P2PNode_ServeClientRequestsServer) error {
+	s.clientStreamMu.Lock()
+	s.clientStream = stream
+	s.clientStreamMu.Unlock()
+
+	defer func() {
+		s.clientStreamMu.Lock()
+		if s.clientStream == stream {
+			s.clientStream = nil
+		}
+		s.clientStreamMu.Unlock()
+	}()
+
+	for {
+		resp, err := stream.Recv()
+		if err != nil {
+			return err
+		}
+		s.clientStreamMu.Lock()
+		ch, exists := s.pendingActions[resp.RequestId]
+		s.clientStreamMu.Unlock()
+		if exists && ch != nil {
+			select {
+			case ch <- resp:
+			default:
+			}
+		}
+	}
+}
+
+func (s *Server) GetTrainingTask(ctx context.Context, req *p2pv1.GetTrainingTaskRequest) (*p2pv1.GetTrainingTaskResponse, error) {
+	pid, err := peer.Decode(req.ClientPeerId)
+	if err != nil {
+		return &p2pv1.GetTrainingTaskResponse{Success: false, Error: fmt.Sprintf("invalid client peer id: %v", err)}, nil
+	}
+	s.ensurePeerAddr(pid)
+
+	taskJSON, err := s.transferManager.GetTrainingTask(ctx, pid, req.ModelId, req.ModelVersion, req.DataSetId, req.ShardId)
+	if err != nil {
+		return &p2pv1.GetTrainingTaskResponse{Success: false, Error: err.Error()}, nil
+	}
+	return &p2pv1.GetTrainingTaskResponse{Success: true, TrainingTaskJson: taskJSON}, nil
+}
+
+func (s *Server) GetModel(ctx context.Context, req *p2pv1.GetModelRequest) (*p2pv1.GetModelResponse, error) {
+	pid, err := peer.Decode(req.ClientPeerId)
+	if err != nil {
+		return &p2pv1.GetModelResponse{Success: false, Error: fmt.Sprintf("invalid client peer id: %v", err)}, nil
+	}
+	s.ensurePeerAddr(pid)
+
+	localPath, err := s.transferManager.GetModel(ctx, pid, req.ModelId, req.ModelVersion)
+	if err != nil {
+		return &p2pv1.GetModelResponse{Success: false, Error: err.Error()}, nil
+	}
+	return &p2pv1.GetModelResponse{Success: true, LocalFilePath: localPath}, nil
+}
+
+func (s *Server) GetShard(ctx context.Context, req *p2pv1.GetShardRequest) (*p2pv1.GetShardResponse, error) {
+	pid, err := peer.Decode(req.ClientPeerId)
+	if err != nil {
+		return &p2pv1.GetShardResponse{Success: false, Error: fmt.Sprintf("invalid client peer id: %v", err)}, nil
+	}
+	s.ensurePeerAddr(pid)
+
+	localPath, err := s.transferManager.GetShard(ctx, pid, req.ModelId, req.ModelVersion, req.DataSetId, req.ShardId)
+	if err != nil {
+		return &p2pv1.GetShardResponse{Success: false, Error: err.Error()}, nil
+	}
+	return &p2pv1.GetShardResponse{Success: true, LocalFilePath: localPath}, nil
+}
+
+func (s *Server) SendUpdate(ctx context.Context, req *p2pv1.SendUpdateRequest) (*p2pv1.SendUpdateResponse, error) {
+	pid, err := peer.Decode(req.ClientPeerId)
+	if err != nil {
+		return &p2pv1.SendUpdateResponse{Success: false, Error: fmt.Sprintf("invalid client peer id: %v", err)}, nil
+	}
+	s.ensurePeerAddr(pid)
+
+	err = s.transferManager.SendUpdate(ctx, pid, req.TrainingResultJson, req.UpdateArtifactPath)
+	if err != nil {
+		return &p2pv1.SendUpdateResponse{Success: false, Error: err.Error()}, nil
+	}
+	return &p2pv1.SendUpdateResponse{Success: true}, nil
+}
+

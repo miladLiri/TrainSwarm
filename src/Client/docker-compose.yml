@@ -1,0 +1,45 @@
+﻿version: "3.8"
+
+services:
+  p2p-node:
+    build:
+      context: ../p2p-node
+    environment:
+      - RELAY_HOST=${RELAY_HOST:-bootstrap-relay}
+      - RELAY_PORT=${RELAY_PORT:-4001}
+      - RELAY_HTTP_PORT=${RELAY_HTTP_PORT:-8090}
+      - P2P_PORT=${P2P_PORT:-9000}
+      - GRPC_PORT=50051
+      - WORKING_DIR=/artifacts
+    volumes:
+      - client-artifacts:/artifacts
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 50051 || exit 1"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+      start_period: 1s
+
+  client:
+    build:
+      context: .
+    depends_on:
+      p2p-node:
+        condition: service_healthy
+    environment:
+      - P2P_GRPC_HOST=p2p-node
+      - P2P_GRPC_PORT=50051
+      - TRAINING_CLIENT_DB_PATH=/data/training.db
+      - TRAINING_WORKING_DIRECTORY=/artifacts
+      - TRAINING_CLIENT_WORKING_DIRECTORY=/artifacts
+      - WORKING_DIR=/artifacts
+      - COORDINATOR_ADDRESS=${COORDINATOR_ADDRESS:-http://coordinator:8080}
+    volumes:
+      - client-data:/data
+      - client-artifacts:/artifacts
+    stdin_open: true
+    tty: true
+
+volumes:
+  client-data:
+  client-artifacts:

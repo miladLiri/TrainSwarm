@@ -9,12 +9,53 @@ class TrainerState:
     DEFAULT_CLIENT_NODE_ID: str = "trainer-node-01"
 
     def __init__(self) -> None:
-        # Strictly hardcoded string constant per specification clarification
+        # Initial client node ID, updated when P2P node ID is resolved
         self._client_node_id: str = self.DEFAULT_CLIENT_NODE_ID
+        self._p2p_node_id: Optional[str] = None
+        self._is_training: bool = False
+        self._current_step: str = ""
+        self._metrics: dict = {}
         self._is_connected: bool = False
         self._trainer_id: Optional[str] = None
         self._current_status: str = "INITIALIZED"
         self._assigned_tasks: List[str] = []
+
+    @property
+    def p2p_node_id(self) -> Optional[str]:
+        """Returns the libp2p peer ID retrieved from the local p2p-node."""
+        return self._p2p_node_id
+
+    @property
+    def is_training(self) -> bool:
+        """Returns True if the trainer is actively performing a training run."""
+        return self._is_training
+
+    @is_training.setter
+    def is_training(self, value: bool) -> None:
+        self._is_training = bool(value)
+
+    @property
+    def current_step(self) -> str:
+        """Returns the human-readable description of the current training step."""
+        return self._current_step
+
+    @current_step.setter
+    def current_step(self, value: str) -> None:
+        self._current_step = str(value)
+
+    @property
+    def metrics(self) -> dict:
+        """Returns the latest training metrics dictionary."""
+        return dict(self._metrics)
+
+    @metrics.setter
+    def metrics(self, value: dict) -> None:
+        self._metrics = dict(value) if value else {}
+
+    def set_node_id(self, node_id: str) -> None:
+        """Sets the authoritative P2P node ID and updates client_node_id."""
+        self._p2p_node_id = str(node_id)
+        self._client_node_id = str(node_id)
 
     @property
     def client_node_id(self) -> str:

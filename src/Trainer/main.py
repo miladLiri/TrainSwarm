@@ -59,9 +59,22 @@ def main(raw_args: Optional[List[str]] = None) -> int:
     # 2. Initialize Dependency Injection Container (Composition Root)
     container = DIContainer(config=config)
 
+    # 2.5. P2P Node Identity Discovery & Fail-Fast Startup Guard
+    try:
+        p2p_node_id = container.set_node_id_handler.handle()
+        print(f"[Trainer] P2P sidecar node ID verified: {p2p_node_id}")
+    except Exception as e:
+        print(f"[Trainer] [FATAL] Failed to connect to local p2p-node sidecar: {e}", file=sys.stderr)
+        logger.error("p2p-node sidecar connection failed during boot: %s", e, exc_info=True)
+        return 1
+
     # 3. Initialize Coordinator gRPC Command Dispatcher & Register Handlers
     dispatcher = CommandDispatcher()
-    start_training_handler = StartTrainingHandler(trainer_state=container.state)
+    start_training_handler = StartTrainingHandler(
+        trainer_state=container.state,
+        p2p_node_adapter=container.p2p_node_adapter,
+        working_directory=config.working_directory,
+    )
     dispatcher.register_handler(
         command_type=CommandType.StartTraining,
         model_class=StartTrainingCommand,

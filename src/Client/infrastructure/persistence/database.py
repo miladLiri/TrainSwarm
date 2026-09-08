@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS training_shards (
     artifact_path TEXT NOT NULL,
     sample_count INTEGER NOT NULL CHECK (sample_count > 0),
     status TEXT NOT NULL,
+    trainer_node_id TEXT NULL,
     metrics TEXT NULL,
     training_metadata TEXT NULL,
     update_artifact_path TEXT NULL,
@@ -96,6 +97,13 @@ class DatabaseManager:
                 cursor.execute(CREATE_UNIQUE_INDEX_SQL)
                 cursor.execute(CREATE_MODELS_TABLE_SQL)
                 cursor.execute(CREATE_MODELS_INDEX_SQL)
+
+                # Ensure trainer_node_id column exists if table was pre-existing
+                cursor.execute("PRAGMA table_info(training_shards);")
+                columns = [row["name"] for row in cursor.fetchall()]
+                if "trainer_node_id" not in columns:
+                    cursor.execute("ALTER TABLE training_shards ADD COLUMN trainer_node_id TEXT NULL;")
+
                 conn.commit()
             logger.info("SQLite database schema initialized successfully at '%s'", self.db_path)
         except sqlite3.Error as e:

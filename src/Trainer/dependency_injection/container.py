@@ -7,13 +7,15 @@ from typing import Optional
 try:
     from Trainer.config import ConfigManager, TrainerConfig
     from Trainer.application.state import TrainerState
-    from Trainer.infrastructure.adapters import CoordinatorAdapter
+    from Trainer.infrastructure.adapters import CoordinatorAdapter, TrainerP2PNodeAdapter
     from Trainer.application.trainer_commands.connect_trainer import ConnectTrainerCommandHandler
+    from Trainer.application.trainer_commands.set_node_id import SetNodeIdCommandHandler
 except ImportError:
     from config import ConfigManager, TrainerConfig
     from application.state import TrainerState
-    from infrastructure.adapters import CoordinatorAdapter
+    from infrastructure.adapters import CoordinatorAdapter, TrainerP2PNodeAdapter
     from application.trainer_commands.connect_trainer import ConnectTrainerCommandHandler
+    from application.trainer_commands.set_node_id import SetNodeIdCommandHandler
 
 logger = logging.getLogger("trainswarm.trainer.di")
 
@@ -44,6 +46,8 @@ class DIContainer:
                 logger.warning("CoordinatorAdapter initialization failed: %s", e)
                 self._coordinator_adapter = None
 
+        self._p2p_node_adapter: TrainerP2PNodeAdapter = TrainerP2PNodeAdapter()
+
         # 3. Application Command Handlers
         self._connect_trainer_handler: Optional[ConnectTrainerCommandHandler] = None
         if self._coordinator_adapter:
@@ -52,9 +56,24 @@ class DIContainer:
                 coordinator_adapter=self._coordinator_adapter,
             )
 
+        self._set_node_id_handler: SetNodeIdCommandHandler = SetNodeIdCommandHandler(
+            trainer_state=self._state,
+            p2p_node_adapter=self._p2p_node_adapter,
+        )
+
         # 4. Background Command Listener and Dispatcher
         self._command_listener = None
         self._command_dispatcher = None
+
+    @property
+    def p2p_node_adapter(self) -> TrainerP2PNodeAdapter:
+        """Access the TrainerP2PNodeAdapter."""
+        return self._p2p_node_adapter
+
+    @property
+    def set_node_id_handler(self) -> SetNodeIdCommandHandler:
+        """Access the SetNodeIdCommandHandler."""
+        return self._set_node_id_handler
 
     @property
     def config(self) -> TrainerConfig:

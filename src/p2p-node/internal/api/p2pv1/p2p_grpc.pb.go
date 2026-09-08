@@ -29,26 +29,45 @@ const (
 	P2PNode_CancelTransfer_FullMethodName      = "/p2p.v1.P2PNode/CancelTransfer"
 	P2PNode_GetTransferStatus_FullMethodName   = "/p2p.v1.P2PNode/GetTransferStatus"
 	P2PNode_RequestFile_FullMethodName         = "/p2p.v1.P2PNode/RequestFile"
+	P2PNode_GetTrainingTask_FullMethodName     = "/p2p.v1.P2PNode/GetTrainingTask"
+	P2PNode_GetModel_FullMethodName            = "/p2p.v1.P2PNode/GetModel"
+	P2PNode_GetShard_FullMethodName            = "/p2p.v1.P2PNode/GetShard"
+	P2PNode_SendUpdate_FullMethodName          = "/p2p.v1.P2PNode/SendUpdate"
+	P2PNode_ServeClientRequests_FullMethodName = "/p2p.v1.P2PNode/ServeClientRequests"
 )
 
 // P2PNodeClient is the client API for P2PNode service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// Service implemented by the Go p2p-node standalone sidecar executable.
+// Exposes a localhost-bound gRPC interface to Python applications.
 type P2PNodeClient interface {
-	// Node Management
+	// --- Node & Connection Management ---
 	GetNodeInfo(ctx context.Context, in *GetNodeInfoRequest, opts ...grpc.CallOption) (*GetNodeInfoResponse, error)
-	// Connection Management
 	Connect(ctx context.Context, in *ConnectRequest, opts ...grpc.CallOption) (*ConnectResponse, error)
 	Disconnect(ctx context.Context, in *DisconnectRequest, opts ...grpc.CallOption) (*DisconnectResponse, error)
 	GetConnectionStatus(ctx context.Context, in *GetConnectionStatusRequest, opts ...grpc.CallOption) (*GetConnectionStatusResponse, error)
-	// Event Subscription
 	WatchEvents(ctx context.Context, in *WatchEventsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[NodeEvent], error)
-	// File Transfers
+	// --- Base File Transfer RPCs ---
 	SendFile(ctx context.Context, in *SendFileRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TransferEvent], error)
 	AcceptFile(ctx context.Context, in *AcceptFileRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TransferEvent], error)
 	CancelTransfer(ctx context.Context, in *CancelTransferRequest, opts ...grpc.CallOption) (*CancelTransferResponse, error)
 	GetTransferStatus(ctx context.Context, in *GetTransferStatusRequest, opts ...grpc.CallOption) (*TransferStatusResponse, error)
 	RequestFile(ctx context.Context, in *RequestFileRequest, opts ...grpc.CallOption) (*RequestFileResponse, error)
+	// --- Trainer P2P High-Level Workflows ---
+	// Step 1: Request training task specification from Client
+	GetTrainingTask(ctx context.Context, in *GetTrainingTaskRequest, opts ...grpc.CallOption) (*GetTrainingTaskResponse, error)
+	// Step 2: Request base model checkpoint from Client (streams over P2P, saves to working dir)
+	GetModel(ctx context.Context, in *GetModelRequest, opts ...grpc.CallOption) (*GetModelResponse, error)
+	// Step 3: Request assigned dataset shard from Client (streams over P2P, saves to working dir)
+	GetShard(ctx context.Context, in *GetShardRequest, opts ...grpc.CallOption) (*GetShardResponse, error)
+	// Step 4: Stream trained weights delta and metadata back to Client
+	SendUpdate(ctx context.Context, in *SendUpdateRequest, opts ...grpc.CallOption) (*SendUpdateResponse, error)
+	// --- Client Inbound Request Dispatch ---
+	// Long-lived bidirectional stream for Client Python adapter to receive inbound
+	// requests arriving over libp2p and return command handler execution outputs.
+	ServeClientRequests(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ClientActionResponse, ClientActionRequest], error)
 }
 
 type p2PNodeClient struct {
@@ -186,24 +205,91 @@ func (c *p2PNodeClient) RequestFile(ctx context.Context, in *RequestFileRequest,
 	return out, nil
 }
 
+func (c *p2PNodeClient) GetTrainingTask(ctx context.Context, in *GetTrainingTaskRequest, opts ...grpc.CallOption) (*GetTrainingTaskResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTrainingTaskResponse)
+	err := c.cc.Invoke(ctx, P2PNode_GetTrainingTask_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *p2PNodeClient) GetModel(ctx context.Context, in *GetModelRequest, opts ...grpc.CallOption) (*GetModelResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetModelResponse)
+	err := c.cc.Invoke(ctx, P2PNode_GetModel_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *p2PNodeClient) GetShard(ctx context.Context, in *GetShardRequest, opts ...grpc.CallOption) (*GetShardResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetShardResponse)
+	err := c.cc.Invoke(ctx, P2PNode_GetShard_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *p2PNodeClient) SendUpdate(ctx context.Context, in *SendUpdateRequest, opts ...grpc.CallOption) (*SendUpdateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendUpdateResponse)
+	err := c.cc.Invoke(ctx, P2PNode_SendUpdate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *p2PNodeClient) ServeClientRequests(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ClientActionResponse, ClientActionRequest], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &P2PNode_ServiceDesc.Streams[3], P2PNode_ServeClientRequests_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ClientActionResponse, ClientActionRequest]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type P2PNode_ServeClientRequestsClient = grpc.BidiStreamingClient[ClientActionResponse, ClientActionRequest]
+
 // P2PNodeServer is the server API for P2PNode service.
 // All implementations must embed UnimplementedP2PNodeServer
 // for forward compatibility.
+//
+// Service implemented by the Go p2p-node standalone sidecar executable.
+// Exposes a localhost-bound gRPC interface to Python applications.
 type P2PNodeServer interface {
-	// Node Management
+	// --- Node & Connection Management ---
 	GetNodeInfo(context.Context, *GetNodeInfoRequest) (*GetNodeInfoResponse, error)
-	// Connection Management
 	Connect(context.Context, *ConnectRequest) (*ConnectResponse, error)
 	Disconnect(context.Context, *DisconnectRequest) (*DisconnectResponse, error)
 	GetConnectionStatus(context.Context, *GetConnectionStatusRequest) (*GetConnectionStatusResponse, error)
-	// Event Subscription
 	WatchEvents(*WatchEventsRequest, grpc.ServerStreamingServer[NodeEvent]) error
-	// File Transfers
+	// --- Base File Transfer RPCs ---
 	SendFile(*SendFileRequest, grpc.ServerStreamingServer[TransferEvent]) error
 	AcceptFile(*AcceptFileRequest, grpc.ServerStreamingServer[TransferEvent]) error
 	CancelTransfer(context.Context, *CancelTransferRequest) (*CancelTransferResponse, error)
 	GetTransferStatus(context.Context, *GetTransferStatusRequest) (*TransferStatusResponse, error)
 	RequestFile(context.Context, *RequestFileRequest) (*RequestFileResponse, error)
+	// --- Trainer P2P High-Level Workflows ---
+	// Step 1: Request training task specification from Client
+	GetTrainingTask(context.Context, *GetTrainingTaskRequest) (*GetTrainingTaskResponse, error)
+	// Step 2: Request base model checkpoint from Client (streams over P2P, saves to working dir)
+	GetModel(context.Context, *GetModelRequest) (*GetModelResponse, error)
+	// Step 3: Request assigned dataset shard from Client (streams over P2P, saves to working dir)
+	GetShard(context.Context, *GetShardRequest) (*GetShardResponse, error)
+	// Step 4: Stream trained weights delta and metadata back to Client
+	SendUpdate(context.Context, *SendUpdateRequest) (*SendUpdateResponse, error)
+	// --- Client Inbound Request Dispatch ---
+	// Long-lived bidirectional stream for Client Python adapter to receive inbound
+	// requests arriving over libp2p and return command handler execution outputs.
+	ServeClientRequests(grpc.BidiStreamingServer[ClientActionResponse, ClientActionRequest]) error
 	mustEmbedUnimplementedP2PNodeServer()
 }
 
@@ -243,6 +329,21 @@ func (UnimplementedP2PNodeServer) GetTransferStatus(context.Context, *GetTransfe
 }
 func (UnimplementedP2PNodeServer) RequestFile(context.Context, *RequestFileRequest) (*RequestFileResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RequestFile not implemented")
+}
+func (UnimplementedP2PNodeServer) GetTrainingTask(context.Context, *GetTrainingTaskRequest) (*GetTrainingTaskResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTrainingTask not implemented")
+}
+func (UnimplementedP2PNodeServer) GetModel(context.Context, *GetModelRequest) (*GetModelResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetModel not implemented")
+}
+func (UnimplementedP2PNodeServer) GetShard(context.Context, *GetShardRequest) (*GetShardResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetShard not implemented")
+}
+func (UnimplementedP2PNodeServer) SendUpdate(context.Context, *SendUpdateRequest) (*SendUpdateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SendUpdate not implemented")
+}
+func (UnimplementedP2PNodeServer) ServeClientRequests(grpc.BidiStreamingServer[ClientActionResponse, ClientActionRequest]) error {
+	return status.Error(codes.Unimplemented, "method ServeClientRequests not implemented")
 }
 func (UnimplementedP2PNodeServer) mustEmbedUnimplementedP2PNodeServer() {}
 func (UnimplementedP2PNodeServer) testEmbeddedByValue()                 {}
@@ -424,6 +525,85 @@ func _P2PNode_RequestFile_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _P2PNode_GetTrainingTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTrainingTaskRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(P2PNodeServer).GetTrainingTask(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: P2PNode_GetTrainingTask_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(P2PNodeServer).GetTrainingTask(ctx, req.(*GetTrainingTaskRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _P2PNode_GetModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetModelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(P2PNodeServer).GetModel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: P2PNode_GetModel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(P2PNodeServer).GetModel(ctx, req.(*GetModelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _P2PNode_GetShard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetShardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(P2PNodeServer).GetShard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: P2PNode_GetShard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(P2PNodeServer).GetShard(ctx, req.(*GetShardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _P2PNode_SendUpdate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendUpdateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(P2PNodeServer).SendUpdate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: P2PNode_SendUpdate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(P2PNodeServer).SendUpdate(ctx, req.(*SendUpdateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _P2PNode_ServeClientRequests_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(P2PNodeServer).ServeClientRequests(&grpc.GenericServerStream[ClientActionResponse, ClientActionRequest]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type P2PNode_ServeClientRequestsServer = grpc.BidiStreamingServer[ClientActionResponse, ClientActionRequest]
+
 // P2PNode_ServiceDesc is the grpc.ServiceDesc for P2PNode service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -459,6 +639,22 @@ var P2PNode_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "RequestFile",
 			Handler:    _P2PNode_RequestFile_Handler,
 		},
+		{
+			MethodName: "GetTrainingTask",
+			Handler:    _P2PNode_GetTrainingTask_Handler,
+		},
+		{
+			MethodName: "GetModel",
+			Handler:    _P2PNode_GetModel_Handler,
+		},
+		{
+			MethodName: "GetShard",
+			Handler:    _P2PNode_GetShard_Handler,
+		},
+		{
+			MethodName: "SendUpdate",
+			Handler:    _P2PNode_SendUpdate_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
@@ -475,6 +671,12 @@ var P2PNode_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "AcceptFile",
 			Handler:       _P2PNode_AcceptFile_Handler,
 			ServerStreams: true,
+		},
+		{
+			StreamName:    "ServeClientRequests",
+			Handler:       _P2PNode_ServeClientRequests_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "p2p.proto",
