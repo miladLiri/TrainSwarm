@@ -7,9 +7,12 @@ import sqlite3
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 try:
-    from domain.training_shard import TrainingShard, TrainingShardStatus
+    from Client.domain.training_shard import TrainingShard, TrainingShardStatus
 except ImportError:
-    from src.Client.domain.training_shard import TrainingShard, TrainingShardStatus
+    try:
+        from domain.training_shard import TrainingShard, TrainingShardStatus
+    except ImportError:
+        from src.Client.domain.training_shard import TrainingShard, TrainingShardStatus
 from .database import DatabaseManager
 from .exceptions import (
     DuplicateShardError,
@@ -408,13 +411,12 @@ class TrainingShardRepository(ITrainingShardRepository):
             return
 
         if not isinstance(status, TrainingShardStatus):
-            if isinstance(status, str):
-                try:
-                    status = TrainingShardStatus(status.lower())
-                except ValueError as e:
-                    raise ValueError(f"Invalid TrainingShardStatus: {status}") from e
-            else:
-                raise ValueError(f"status must be a TrainingShardStatus instance, got {type(status)}")
+            status_raw = getattr(status, "value", str(status))
+            status_clean = str(status_raw).split(".")[-1].lower()
+            try:
+                status = TrainingShardStatus(status_clean)
+            except ValueError as e:
+                raise ValueError(f"Invalid TrainingShardStatus: {status}") from e
 
         status_val = status.value
         try:
@@ -439,18 +441,24 @@ class TrainingShardRepository(ITrainingShardRepository):
     ) -> None:
         """Update shard trainer_node_id and status when training starts."""
         if not isinstance(status, TrainingShardStatus):
-            status = TrainingShardStatus(str(status).lower())
+            status_raw = getattr(status, "value", str(status))
+            status_clean = str(status_raw).split(".")[-1].lower()
+            try:
+                status = TrainingShardStatus(status_clean)
+            except ValueError:
+                pass
+        status_val = status.value if hasattr(status, "value") else str(status)
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute(
                     UPDATE_SHARD_TRAINING_STATUS_SQL,
-                    (status.value, trainer_node_id, model_id, str(model_version), dataset_id, shard_id),
+                    (status_val, trainer_node_id, model_id, str(model_version), dataset_id, shard_id),
                 )
                 conn.commit()
             logger.debug(
                 "Updated shard (%s, %s, %s, %s) to %s with trainer %s",
-                model_id, model_version, dataset_id, shard_id, status.value, trainer_node_id
+                model_id, model_version, dataset_id, shard_id, status_val, trainer_node_id
             )
         except sqlite3.Error as e:
             raise PersistenceError(
@@ -469,14 +477,20 @@ class TrainingShardRepository(ITrainingShardRepository):
     ) -> None:
         """Update shard update_artifact_path, metrics, and status when training completes."""
         if not isinstance(status, TrainingShardStatus):
-            status = TrainingShardStatus(str(status).lower())
+            status_raw = getattr(status, "value", str(status))
+            status_clean = str(status_raw).split(".")[-1].lower()
+            try:
+                status = TrainingShardStatus(status_clean)
+            except ValueError:
+                pass
+        status_val = status.value if hasattr(status, "value") else str(status)
         metrics_json = self._serialize_json(metrics)
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute(
                     UPDATE_SHARD_COMPLETED_SQL,
-                    (status.value, update_artifact_path, metrics_json, model_id, str(model_version), dataset_id, shard_id),
+                    (status_val, update_artifact_path, metrics_json, model_id, str(model_version), dataset_id, shard_id),
                 )
                 conn.commit()
             logger.debug(

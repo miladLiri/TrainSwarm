@@ -272,12 +272,15 @@ func (s *Server) DispatchClientAction(ctx context.Context, req *p2pv1.ClientActi
 	s.clientStreamMu.Lock()
 	if s.clientStream == nil {
 		s.clientStreamMu.Unlock()
+		log.Printf("[p2pd-grpc] DispatchClientAction failed: no client application connected via ServeClientRequests")
 		return nil, fmt.Errorf("client application is not connected to p2p-node via ServeClientRequests")
 	}
 	respCh := make(chan *p2pv1.ClientActionResponse, 1)
 	s.pendingActions[req.RequestId] = respCh
 	stream := s.clientStream
 	s.clientStreamMu.Unlock()
+
+	log.Printf("[p2pd-grpc] Dispatching client action %v (request_id=%s) to client application...", req.ActionType, req.RequestId)
 
 	defer func() {
 		s.clientStreamMu.Lock()
@@ -293,11 +296,13 @@ func (s *Server) DispatchClientAction(ctx context.Context, req *p2pv1.ClientActi
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	case resp := <-respCh:
+		log.Printf("[p2pd-grpc] Received client action response for request_id=%s (success=%v)", req.RequestId, resp.Success)
 		return resp, nil
 	}
 }
 
 func (s *Server) ServeClientRequests(stream p2pv1.P2PNode_ServeClientRequestsServer) error {
+	log.Printf("[p2pd-grpc] Client application connected to ServeClientRequests stream")
 	s.clientStreamMu.Lock()
 	s.clientStream = stream
 	s.clientStreamMu.Unlock()
@@ -306,6 +311,9 @@ func (s *Server) ServeClientRequests(stream p2pv1.P2PNode_ServeClientRequestsSer
 		s.clientStreamMu.Lock()
 		if s.clientStream == stream {
 			s.clientStream = nil
+			log.Printf("[p2pd-grpc] Active ServeClientRequests stream closed; clientStream set to nil")
+		} else {
+			log.Printf("[p2pd-grpc] Inactive ServeClientRequests stream closed")
 		}
 		s.clientStreamMu.Unlock()
 	}()

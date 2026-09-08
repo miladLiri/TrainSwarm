@@ -72,14 +72,17 @@ def main(raw_args: Optional[List[str]] = None) -> int:
     # 2.5. P2P Node Identity Discovery & Fail-Fast Startup Guard
     try:
         p2p_node_id = container.set_node_id_handler.handle()
+        container.submit_training_handler.client_node_id = p2p_node_id
         print(f"[Client] P2P sidecar node ID verified: {p2p_node_id}")
     except Exception as e:
         print(f"[Client] [FATAL] Failed to connect to local p2p-node sidecar: {e}", file=sys.stderr)
         logger.error("p2p-node sidecar connection failed during boot: %s", e, exc_info=True)
         return 1
 
-    # Start listening for inbound P2P requests
-    container.p2p_node_adapter.start_listening()
+    # Start listening for inbound P2P requests only in daemon / GUI modes
+    is_daemon = not (args and args[0] == "submit-training")
+    if is_daemon:
+        container.p2p_node_adapter.start_listening()
 
     # 3. Initialize Local SQLite Persistence
     try:
@@ -88,7 +91,8 @@ def main(raw_args: Optional[List[str]] = None) -> int:
             print(f"[Client] Local persistence initialized at: {container.database_manager.db_path}")
     except DatabaseInitializationError as e:
         print(f"[Client] [ERROR] Failed to initialize local persistence: {e}", file=sys.stderr)
-        container.p2p_node_adapter.stop_listening()
+        if is_daemon:
+            container.p2p_node_adapter.stop_listening()
         return 1
 
     # 4. Report Coordinator Adapter status
@@ -106,7 +110,8 @@ def main(raw_args: Optional[List[str]] = None) -> int:
         ui = ConsoleUI(submit_training_handler=container.submit_training_handler)
         return ui.run(args)
     finally:
-        container.p2p_node_adapter.stop_listening()
+        if is_daemon:
+            container.p2p_node_adapter.stop_listening()
 
 
 if __name__ == "__main__":

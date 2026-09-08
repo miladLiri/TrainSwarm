@@ -3,6 +3,7 @@
 from __future__ import annotations
 import json
 import logging
+import os
 from pathlib import Path
 import shutil
 from typing import Callable, List, Optional, Union
@@ -51,6 +52,7 @@ class SubmitTrainingCommandHandler:
         coordinator_adapter: Optional[CoordinatorAdapter] = None,
         client_node_id: str = "client-node-dev",
         model_repository: Optional[IModelRepository] = None,
+        client_state: Optional[Any] = None,
     ) -> None:
         self.working_directory = Path(working_directory).resolve()
         self.smoke_test_handler = smoke_test_handler
@@ -58,6 +60,7 @@ class SubmitTrainingCommandHandler:
         self.coordinator_adapter = coordinator_adapter
         self.client_node_id = client_node_id
         self.model_repository = model_repository
+        self.client_state = client_state
 
     @staticmethod
     def normalize_training_config(cfg: Dict[str, Any]) -> Dict[str, Any]:
@@ -208,7 +211,20 @@ class SubmitTrainingCommandHandler:
             )
 
         rec_shard_size = smoke_result.recommended_samples_per_shard or smoke_result.estimated_samples_per_shard or 1
-        report_progress(f"Smoke test succeeded. Recommended shard size: {rec_shard_size} samples", 50)
+        override_size = os.getenv("OVERRIDE_SHARD_SIZE")
+        if override_size:
+            try:
+                rec_shard_size = int(override_size)
+                logger.info("[SubmitTraining] Overriding shard size via OVERRIDE_SHARD_SIZE: %d", rec_shard_size)
+            except ValueError:
+                pass
+        elif normalized_training_config.get("shard_sample_size"):
+            try:
+                rec_shard_size = int(normalized_training_config["shard_sample_size"])
+                logger.info("[SubmitTraining] Overriding shard size via config shard_sample_size: %d", rec_shard_size)
+            except ValueError:
+                pass
+        report_progress(f"Smoke test succeeded. Shard size: {rec_shard_size} samples", 50)
 
         # 5. Partition dataset into shards
         report_progress(f"Partitioning dataset into shards (size={rec_shard_size})", 65)
@@ -299,8 +315,14 @@ class SubmitTrainingCommandHandler:
             )
 
         report_progress("Registering training tasks with Coordinator", 90)
+        actual_client_node_id = self.client_node_id
+        if self.client_state and getattr(self.client_state, "client_node_id", None):
+            actual_client_node_id = self.client_state.client_node_id
+        elif self.client_state and getattr(self.client_state, "node_id", None):
+            actual_client_node_id = self.client_state.node_id
+
         dto = CreateTrainingTaskDto(
-            client_node_id=self.client_node_id,
+            client_node_id=actual_client_node_id,
             model_id=model_id,
             model_version=command.model_version,
             data_set_id=dataset_id,

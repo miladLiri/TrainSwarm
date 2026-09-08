@@ -20,7 +20,11 @@ import (
 )
 
 func main() {
-	keyPath := flag.String("key", "identity.key", "Path to libp2p private key file")
+	defaultKey := os.Getenv("IDENTITY_PATH")
+	if defaultKey == "" {
+		defaultKey = "identity.key"
+	}
+	keyPath := flag.String("key", defaultKey, "Path to libp2p private key file")
 	p2pPort := flag.Int("p2p-port", getEnvInt("P2P_PORT", 9000), "Port for P2P connections")
 	grpcPort := flag.Int("grpc-port", getEnvInt("GRPC_PORT", 50051), "Port for localhost gRPC API")
 	relayHost := flag.String("relay-host", os.Getenv("RELAY_HOST"), "IP or hostname of the relay server to fetch PeerID from")

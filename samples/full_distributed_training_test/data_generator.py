@@ -1,4 +1,4 @@
-﻿"""
+"""
 Data and Model Artifact Generator for Full Distributed Training Test.
 
 Generates:
@@ -76,6 +76,7 @@ def generate(output_dir: Path | str = DEFAULT_OUTPUT_DIR) -> None:
         "loss": "MSELoss",
         "weight_decay": 0.01,
         "scheduler": "CosineAnnealingLR",
+        "shard_sample_size": 25,
     }
     config_path = out / "training_config.json"
     with open(config_path, "w", encoding="utf-8") as f:

@@ -38,7 +38,10 @@ class SetNodeIdCommandHandler:
             self.client_state.set_node_id(node_id)
 
         if self.client_config is not None:
-            setattr(self.client_config, "client_node_id", node_id)
+            try:
+                object.__setattr__(self.client_config, "client_node_id", node_id)
+            except Exception:
+                pass
 
         logger.info("[SetNodeIdCommandHandler] Updated ClientState with P2P node ID: %s", node_id)
         return node_id

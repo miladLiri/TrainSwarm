@@ -7,5 +7,6 @@
   "learning_rate": 0.001,
   "loss": "MSELoss",
   "weight_decay": 0.01,
-  "scheduler": "CosineAnnealingLR"
+  "scheduler": "CosineAnnealingLR",
+  "shard_sample_size": 25
 }

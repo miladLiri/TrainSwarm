@@ -126,6 +126,8 @@ class ClientP2PNodeAdapter(IClientP2PNodeAdapter):
         logger.info("Stopped Client P2P node inbound request listener.")
 
     def _response_generator(self):
+        # Yield an initial handshake message so gRPC establishes the bidirectional stream immediately
+        yield ClientActionResponse(request_id="client-init", success=True)
         while self._listening:
             item = self._response_queue.get()
             if item is None:

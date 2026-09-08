@@ -1,4 +1,4 @@
-﻿"""
+"""
 Setup and orchestration harness for the full distributed training verification test.
 Boots the full network (Relay, Coordinator, Client + sidecar, 2 Trainers + sidecars).
 
@@ -38,25 +38,37 @@ def is_docker_available() -> bool:
 
 
 def stop_local_processes() -> None:
-    if not PIDS_FILE.exists():
-        return
-    print("[Setup] Stopping previous local test processes...")
-    try:
-        with open(PIDS_FILE, "r", encoding="utf-8") as f:
-            pids = json.load(f)
-        for pid in pids:
-            try:
-                if sys.platform == "win32":
-                    subprocess.run(["taskkill", "/F", "/T", "/PID", str(pid)], capture_output=True, check=False)
-                else:
-                    os.kill(pid, 9)
-            except Exception:
-                pass
-    except Exception as e:
-        print(f"[Setup] Warning stopping processes: {e}")
-    finally:
-        if PIDS_FILE.exists():
+    print("[Setup] Cleaning up previous local test processes...")
+    if PIDS_FILE.exists():
+        try:
+            with open(PIDS_FILE, "r", encoding="utf-8") as f:
+                pids = json.load(f)
+            for pid in pids:
+                try:
+                    if sys.platform == "win32":
+                        subprocess.run(["taskkill", "/F", "/T", "/PID", str(pid)], capture_output=True, check=False)
+                    else:
+                        os.kill(pid, 9)
+                except Exception:
+                    pass
+        except Exception as e:
+            print(f"[Setup] Warning stopping processes by PID: {e}")
+        finally:
             PIDS_FILE.unlink(missing_ok=True)
+
+    # Free test ports if still bound by orphaned processes
+    test_ports = [4001, 8090, 8080, 8081, 50051, 50052, 50053, 9001, 9002, 9003]
+    if sys.platform == "win32":
+        try:
+            cmd = f"Get-NetTCPConnection -LocalPort {','.join(map(str, test_ports))} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique"
+            res = subprocess.run(["powershell", "-NoProfile", "-Command", cmd], capture_output=True, text=True, check=False)
+            for line in res.stdout.splitlines():
+                pid_str = line.strip()
+                if pid_str.isdigit() and int(pid_str) not in (0, 4):
+                    subprocess.run(["taskkill", "/F", "/T", "/PID", pid_str], capture_output=True, check=False)
+        except Exception:
+            pass
+    time.sleep(1.0)
 
 
 def stop_docker_compose() -> None:
@@ -132,11 +144,13 @@ def run_local_setup() -> int:
     for f in ARTIFACTS_DIR.glob("*"):
         shutil.copy2(f, seed_artifacts / f.name)
 
-    creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0
+    creation_flags = (subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS) if sys.platform == "win32" else 0
     pids = []
 
     # 1. Start Relay
     print("[Setup] [1/8] Starting Bootstrap Relay...")
+    relay_bin = SRC_DIR / "bootstrap-relay" / "bin" / "relay.exe"
+    relay_cmd = [str(relay_bin)] if relay_bin.exists() else ["go", "run", "./cmd/relay"]
     relay_log = open(logs_dir / "relay.log", "w", encoding="utf-8")
     relay_env = os.environ.copy()
     relay_env.update({
@@ -147,14 +161,16 @@ def run_local_setup() -> int:
         "P2P_RELAY_LOG_LEVEL": "info",
     })
     relay_proc = subprocess.Popen(
-        ["go", "run", "./cmd/relay"],
+        relay_cmd,
         cwd=str(SRC_DIR / "bootstrap-relay"),
         env=relay_env,
         stdout=relay_log,
         stderr=subprocess.STDOUT,
+        stdin=subprocess.DEVNULL,
         creationflags=creation_flags,
     )
     pids.append(relay_proc.pid)
+    relay_log.close()
 
     if not wait_for_http(RELAY_HTTP_URL, "Bootstrap Relay", 30):
         print("[Setup] [ERROR] Relay failed to start.", file=sys.stderr)
@@ -177,14 +193,19 @@ def run_local_setup() -> int:
         env=coord_env,
         stdout=coord_log,
         stderr=subprocess.STDOUT,
+        stdin=subprocess.DEVNULL,
         creationflags=creation_flags,
     )
     pids.append(coord_proc.pid)
+    coord_log.close()
 
     if not wait_for_http(COORD_HTTP_URL, "Coordinator", 45):
         print("[Setup] [ERROR] Coordinator failed to start.", file=sys.stderr)
         stop_local_processes()
         return 1
+
+    p2pd_bin = SRC_DIR / "p2p-node" / "bin" / "p2pd.exe"
+    p2pd_base_cmd = [str(p2pd_bin)] if p2pd_bin.exists() else ["go", "run", "./cmd/p2pd"]
 
     # 3. Start Client p2p-node (gRPC 50051, P2P 9001)
     print("[Setup] [3/8] Starting Client p2p-node (port 50051)...")
@@ -197,16 +218,19 @@ def run_local_setup() -> int:
         "P2P_PORT": "9001",
         "GRPC_PORT": "50051",
         "WORKING_DIR": str(client_work.resolve()),
+        "IDENTITY_PATH": str((WORK_DIR / "client.key").resolve()),
     })
     cp2p_proc = subprocess.Popen(
-        ["go", "run", "./cmd/p2pd"],
+        p2pd_base_cmd,
         cwd=str(SRC_DIR / "p2p-node"),
         env=cp2p_env,
         stdout=cp2p_log,
         stderr=subprocess.STDOUT,
+        stdin=subprocess.DEVNULL,
         creationflags=creation_flags,
     )
     pids.append(cp2p_proc.pid)
+    cp2p_log.close()
 
     # 4. Start Trainer 1 p2p-node (gRPC 50052, P2P 9002)
     print("[Setup] [4/8] Starting Trainer 1 p2p-node (port 50052)...")
@@ -219,16 +243,19 @@ def run_local_setup() -> int:
         "P2P_PORT": "9002",
         "GRPC_PORT": "50052",
         "WORKING_DIR": str(trainer1_work.resolve()),
+        "IDENTITY_PATH": str((WORK_DIR / "trainer1.key").resolve()),
     })
     t1p2p_proc = subprocess.Popen(
-        ["go", "run", "./cmd/p2pd"],
+        p2pd_base_cmd,
         cwd=str(SRC_DIR / "p2p-node"),
         env=t1p2p_env,
         stdout=t1p2p_log,
         stderr=subprocess.STDOUT,
+        stdin=subprocess.DEVNULL,
         creationflags=creation_flags,
     )
     pids.append(t1p2p_proc.pid)
+    t1p2p_log.close()
 
     # 5. Start Trainer 2 p2p-node (gRPC 50053, P2P 9003)
     print("[Setup] [5/8] Starting Trainer 2 p2p-node (port 50053)...")
@@ -241,16 +268,19 @@ def run_local_setup() -> int:
         "P2P_PORT": "9003",
         "GRPC_PORT": "50053",
         "WORKING_DIR": str(trainer2_work.resolve()),
+        "IDENTITY_PATH": str((WORK_DIR / "trainer2.key").resolve()),
     })
     t2p2p_proc = subprocess.Popen(
-        ["go", "run", "./cmd/p2pd"],
+        p2pd_base_cmd,
         cwd=str(SRC_DIR / "p2p-node"),
         env=t2p2p_env,
         stdout=t2p2p_log,
         stderr=subprocess.STDOUT,
+        stdin=subprocess.DEVNULL,
         creationflags=creation_flags,
     )
     pids.append(t2p2p_proc.pid)
+    t2p2p_log.close()
 
     # Allow p2p nodes to initialize and connect to relay
     time.sleep(4.0)
@@ -260,6 +290,7 @@ def run_local_setup() -> int:
     client_log = open(logs_dir / "client.log", "w", encoding="utf-8")
     client_env = os.environ.copy()
     client_env.update({
+        "PYTHONUNBUFFERED": "1",
         "P2P_GRPC_HOST": "127.0.0.1",
         "P2P_GRPC_PORT": "50051",
         "TRAINING_CLIENT_DB_PATH": str((db_dir / "training.db").resolve()),
@@ -275,15 +306,18 @@ def run_local_setup() -> int:
         env=client_env,
         stdout=client_log,
         stderr=subprocess.STDOUT,
+        stdin=subprocess.DEVNULL,
         creationflags=creation_flags,
     )
     pids.append(client_proc.pid)
+    client_log.close()
 
     # 7. Start Trainer 1
     print("[Setup] [7/8] Starting Trainer 1 (trainer-node-01)...")
     t1_log = open(logs_dir / "trainer1.log", "w", encoding="utf-8")
     t1_env = os.environ.copy()
     t1_env.update({
+        "PYTHONUNBUFFERED": "1",
         "P2P_GRPC_HOST": "127.0.0.1",
         "P2P_GRPC_PORT": "50052",
         "TRAINER_WORKING_DIRECTORY": str(trainer1_work.resolve()),
@@ -299,15 +333,18 @@ def run_local_setup() -> int:
         env=t1_env,
         stdout=t1_log,
         stderr=subprocess.STDOUT,
+        stdin=subprocess.DEVNULL,
         creationflags=creation_flags,
     )
     pids.append(t1_proc.pid)
+    t1_log.close()
 
     # 8. Start Trainer 2
     print("[Setup] [8/8] Starting Trainer 2 (trainer-node-02)...")
     t2_log = open(logs_dir / "trainer2.log", "w", encoding="utf-8")
     t2_env = os.environ.copy()
     t2_env.update({
+        "PYTHONUNBUFFERED": "1",
         "P2P_GRPC_HOST": "127.0.0.1",
         "P2P_GRPC_PORT": "50053",
         "TRAINER_WORKING_DIRECTORY": str(trainer2_work.resolve()),
@@ -323,9 +360,11 @@ def run_local_setup() -> int:
         env=t2_env,
         stdout=t2_log,
         stderr=subprocess.STDOUT,
+        stdin=subprocess.DEVNULL,
         creationflags=creation_flags,
     )
     pids.append(t2_proc.pid)
+    t2_log.close()
 
     # Save PIDs
     with open(PIDS_FILE, "w", encoding="utf-8") as f:

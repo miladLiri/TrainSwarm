@@ -78,8 +78,9 @@ def run_startup(container: Any) -> bool:
             container.command_dispatcher = dispatcher
 
         config = container.config
+        node_identity = getattr(container.state, "client_node_id", config.trainer_node_id)
         command_listener = TrainerCommandListener(
-            trainer_node_id=config.trainer_node_id,
+            trainer_node_id=node_identity,
             coordinator_grpc_url=config.coordinator_grpc_address,
             command_dispatcher=dispatcher,
             reconnect_interval_seconds=5.0,
@@ -87,7 +88,7 @@ def run_startup(container: Any) -> bool:
         container.command_listener = command_listener
 
     command_listener.start()
-    print(f"[Trainer] Command listener started for trainer '{container.config.trainer_node_id}'.")
+    print(f"[Trainer] Command listener started for trainer '{node_identity}'.")
 
     _has_run = True
     return True

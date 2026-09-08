@@ -1,4 +1,4 @@
-﻿# Full Distributed Training Multi-Node NAT Verification Test
+# Full Distributed Training Multi-Node NAT Verification Test
 
 This sample validates end-to-end distributed training across isolated nodes behind simulated NAT networks communicating via peer-to-peer data transfers over a libp2p Circuit Relay v2.
 
@@ -30,14 +30,41 @@ This sample validates end-to-end distributed training across isolated nodes behi
 +--------------------+  +--------------------+  +--------------------+
 ```
 
-## Running the Test Suite
+## Running Without Docker (Native Local Execution)
+
+For local development or environments without Docker / Docker Compose installed, run the automated all-in-one runner:
+
+```bash
+cd samples/full_distributed_training_test
+python run_local.py
+```
+
+This script:
+1. Verifies test artifacts exist (or generates them via `data_generator.py`).
+2. Cleans up lingering processes on ports 4001, 8090, 8080, 8081, 50051-50053, 9001-9003.
+3. Launches all 8 services in background processes with independent working directories:
+   - **Bootstrap Relay**: Port 4001 (P2P), Port 8090 (Health HTTP)
+   - **Coordinator**: Port 8080 (REST HTTP), Port 8081 (gRPC)
+   - **Client p2p-node**: Port 9001 (P2P), Port 50051 (gRPC)
+   - **Trainer 1 p2p-node**: Port 9002 (P2P), Port 50052 (gRPC)
+   - **Trainer 2 p2p-node**: Port 9003 (P2P), Port 50053 (gRPC)
+   - **Client daemon**: Connects to 50051 and listens for inbound P2P transfers
+   - **Trainer 1**: Connects to Coordinator & sidecar 50052
+   - **Trainer 2**: Connects to Coordinator & sidecar 50053
+4. Submits the training task with `OVERRIDE_SHARD_SIZE=25` (2 shards).
+5. Monitors Client SQLite database (`training.db`) until all shards reach `completed`.
+6. Asserts artifact presence, trainer assignments, and ephemeral file purge.
+7. Automatically tears down all background processes and cleans up.
+
+---
+
+## Running With Docker Compose
 
 ### Step 1: Environment Setup
-Launches the full multi-node stack (Relay, Coordinator, Client + Sidecar, 2 Trainers + Sidecars) and monitors health:
+Launches the full multi-node stack in isolated Docker containers:
 ```bash
 python setup.py
 ```
-*(In Docker environments, runs `docker compose up --build -d`. In non-Docker environments, runs the equivalent topology locally via background processes).*
 
 ### Step 2: Submit Training Task
 Submits a canonical `.pt2` model checkpoint and 50-sample dataset partitioned into 2 shards:
@@ -56,7 +83,7 @@ python verify.py
 ```
 
 ### Step 4: Teardown
-Clean up containers and background processes:
+Clean up containers:
 ```bash
 python setup.py --stop
 ```

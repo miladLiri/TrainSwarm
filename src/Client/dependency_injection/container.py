@@ -74,15 +74,6 @@ class DIContainer:
             safety_factor=self._config.shard_safety_factor,
         )
 
-        self._submit_training_handler = SubmitTrainingCommandHandler(
-            working_directory=self._config.working_directory,
-            smoke_test_handler=self._smoke_test_handler,
-            shard_repository=self._shard_repository,
-            coordinator_adapter=self._coordinator_adapter,
-            client_node_id=self._config.client_node_id,
-            model_repository=self._model_repository,
-        )
-
         # 5. State Management & P2P Infrastructure
         self._state = ClientState(
             node_id=self._config.client_node_id,
@@ -93,6 +84,16 @@ class DIContainer:
             client_state=self._state,
             p2p_node_adapter=self._p2p_node_adapter,
             client_config=self._config,
+        )
+
+        self._submit_training_handler = SubmitTrainingCommandHandler(
+            working_directory=self._config.working_directory,
+            smoke_test_handler=self._smoke_test_handler,
+            shard_repository=self._shard_repository,
+            coordinator_adapter=self._coordinator_adapter,
+            client_node_id=self._config.client_node_id,
+            model_repository=self._model_repository,
+            client_state=self._state,
         )
         self._get_training_task_handler = GetTrainingTaskCommandHandler(
             model_repository=self._model_repository,
@@ -186,4 +187,6 @@ class DIContainer:
     @property
     def submit_training_handler(self) -> SubmitTrainingCommandHandler:
         """Access the SubmitTrainingCommandHandler wired with orchestrator, persistence, and adapters."""
+        if hasattr(self, "_state") and self._state and self._state.client_node_id:
+            self._submit_training_handler.client_node_id = self._state.client_node_id
         return self._submit_training_handler
