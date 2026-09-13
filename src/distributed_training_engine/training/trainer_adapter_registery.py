@@ -25,6 +25,13 @@ class TrainerAdapterRegistery:
             self.register(ModelType.CANONICAL_TORCH, CanonicalTorchTrainer)
         except ImportError:
             pass
+        try:
+            from ..adapters.canonical_causal_decoder.training.canonical_causal_decoder_trainer import (
+                CanonicalCausalDecoderTrainer,
+            )
+            self.register(ModelType.CANONICAL_CAUSAL_DECODER, CanonicalCausalDecoderTrainer)
+        except ImportError:
+            pass
 
     def register(self, model_type: Union[ModelType, str], adapter_class: Type[TrainerAdapter]) -> None:
         """
@@ -46,6 +53,15 @@ class TrainerAdapterRegistery:
                 try:
                     from ..adapters.canonical_torch.training.canonical_torch_trainer import CanonicalTorchTrainer
                     self.register(ModelType.CANONICAL_TORCH, CanonicalTorchTrainer)
+                    return self._adapters[key]
+                except ImportError:
+                    pass
+            elif key == ModelType.CANONICAL_CAUSAL_DECODER.value:
+                try:
+                    from ..adapters.canonical_causal_decoder.training.canonical_causal_decoder_trainer import (
+                        CanonicalCausalDecoderTrainer,
+                    )
+                    self.register(ModelType.CANONICAL_CAUSAL_DECODER, CanonicalCausalDecoderTrainer)
                     return self._adapters[key]
                 except ImportError:
                     pass

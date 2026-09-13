@@ -144,7 +144,14 @@ class SubmitTrainingCommandHandler:
         model_staging_dir = self.working_directory / model_id
         try:
             model_staging_dir.mkdir(parents=True, exist_ok=True)
-            model_dest = model_staging_dir / f"{model_id}_{command.model_version}.pt2"
+            model_path_str = str(command.model_path)
+            if model_path_str.endswith(".tar.gz"):
+                ext = ".tar.gz"
+            elif model_path_str.endswith(".gz"):
+                ext = ".gz"
+            else:
+                ext = Path(command.model_path).suffix or (".gz" if model_type_str == "canonical_causal_decoder" else ".pt2")
+            model_dest = model_staging_dir / f"{model_id}_{command.model_version}{ext}"
             report_progress(f"Staging model checkpoint to {model_dest.name}", 15)
             shutil.copy2(command.model_path, model_dest)
 

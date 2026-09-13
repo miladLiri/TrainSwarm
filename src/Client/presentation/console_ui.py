@@ -67,10 +67,17 @@ class ConsoleUI:
             help="Submit a model and dataset for distributed training",
         )
         sub_parser.add_argument(
+            "--model-type",
+            default="canonical_torch",
+            choices=["canonical_torch", "canonical_causal_decoder"],
+            type=str,
+            help="Engine model type (default: canonical_torch)",
+        )
+        sub_parser.add_argument(
             "--model-path",
             required=True,
             type=str,
-            help="Path to the PyTorch base model checkpoint (.pt2)",
+            help="Path to base model file (.pt2 for canonical_torch, .gz/.tar.gz for canonical_causal_decoder)",
         )
         sub_parser.add_argument(
             "--dataset-path",
@@ -83,12 +90,6 @@ class ConsoleUI:
             required=True,
             type=str,
             help="Version identifier of the model (e.g. v1.0)",
-        )
-        sub_parser.add_argument(
-            "--model-type",
-            default="canonical_torch",
-            type=str,
-            help="Engine model type (default: canonical_torch)",
         )
         sub_parser.add_argument(
             "--training-config",

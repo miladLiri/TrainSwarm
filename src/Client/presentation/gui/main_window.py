@@ -369,7 +369,7 @@ class MainWindow(QMainWindow):
 
         # 1. Model Engine Type (FIRST INPUT)
         self.model_type_combo = QComboBox()
-        self.model_type_combo.addItems(["canonical_torch"])
+        self.model_type_combo.addItems(["canonical_torch", "canonical_causal_decoder"])
         self.model_type_combo.currentTextChanged.connect(self._on_model_type_changed)
         artifacts_layout.addRow("Model Engine Type:", self.model_type_combo)
 
@@ -430,6 +430,12 @@ class MainWindow(QMainWindow):
         params_layout.setSpacing(14)
         params_layout.setContentsMargins(14, 18, 14, 14)
 
+        # 2.A Canonical PyTorch Parameters Container
+        self.torch_params_widget = QWidget()
+        torch_params_layout = QVBoxLayout(self.torch_params_widget)
+        torch_params_layout.setContentsMargins(0, 0, 0, 0)
+        torch_params_layout.setSpacing(14)
+
         # 2.1 Lifecycle & Batching Sub-group
         lifecycle_subgroup = QGroupBox("Lifecycle & Batching")
         lifecycle_layout = QGridLayout(lifecycle_subgroup)
@@ -468,7 +474,7 @@ class MainWindow(QMainWindow):
         self.max_grad_norm_edit.setPlaceholderText("Optional (e.g. 1.0)")
         lifecycle_layout.addWidget(self.max_grad_norm_edit, 1, 5)
 
-        params_layout.addWidget(lifecycle_subgroup)
+        torch_params_layout.addWidget(lifecycle_subgroup)
 
         # 2.2 Dynamic Optimizer Configuration
         optim_subgroup = QGroupBox("Optimizer Configuration")
@@ -563,7 +569,7 @@ class MainWindow(QMainWindow):
 
         self.optim_stack.addWidget(self.sgd_widget)
         optim_main_layout.addWidget(self.optim_stack)
-        params_layout.addWidget(optim_subgroup)
+        torch_params_layout.addWidget(optim_subgroup)
 
         # 2.3 Dynamic Loss Criterion Configuration
         loss_subgroup = QGroupBox("Loss Criterion Configuration")
@@ -605,7 +611,7 @@ class MainWindow(QMainWindow):
         self.ce_label.hide()
         self.ce_smoothing_spin.hide()
 
-        params_layout.addWidget(loss_subgroup)
+        torch_params_layout.addWidget(loss_subgroup)
 
         # 2.4 Dynamic Learning Rate Scheduler Configuration
         sched_subgroup = QGroupBox("Learning Rate Scheduler")
@@ -723,7 +729,119 @@ class MainWindow(QMainWindow):
         self.sched_stack.addWidget(self.exp_widget)
 
         sched_main_layout.addWidget(self.sched_stack)
-        params_layout.addWidget(sched_subgroup)
+        torch_params_layout.addWidget(sched_subgroup)
+        params_layout.addWidget(self.torch_params_widget)
+
+        # ======================================================================
+        # 2.B CANONICAL CAUSAL DECODER PARAMETERS CONTAINER
+        # ======================================================================
+        self.ccdm_params_widget = QWidget()
+        ccdm_outer_layout = QVBoxLayout(self.ccdm_params_widget)
+        ccdm_outer_layout.setContentsMargins(0, 0, 0, 0)
+        ccdm_outer_layout.setSpacing(14)
+
+        self.ccdm_params_group = QGroupBox("Hugging Face Causal Decoder Training Configuration")
+        ccdm_grid = QGridLayout(self.ccdm_params_group)
+        ccdm_grid.setHorizontalSpacing(14)
+        ccdm_grid.setVerticalSpacing(10)
+
+        # Row 0: Batch Size, Epochs, Grad Accum Steps
+        ccdm_grid.addWidget(QLabel("Batch Size:"), 0, 0)
+        self.ccdm_batch_size_spin = QSpinBox()
+        self.ccdm_batch_size_spin.setRange(1, 1048576)
+        self.ccdm_batch_size_spin.setValue(2)
+        ccdm_grid.addWidget(self.ccdm_batch_size_spin, 0, 1)
+
+        ccdm_grid.addWidget(QLabel("Epochs:"), 0, 2)
+        self.ccdm_epochs_spin = QSpinBox()
+        self.ccdm_epochs_spin.setRange(1, 10000)
+        self.ccdm_epochs_spin.setValue(1)
+        ccdm_grid.addWidget(self.ccdm_epochs_spin, 0, 3)
+
+        ccdm_grid.addWidget(QLabel("Grad Accum Steps:"), 0, 4)
+        self.ccdm_grad_accum_spin = QSpinBox()
+        self.ccdm_grad_accum_spin.setRange(1, 1000)
+        self.ccdm_grad_accum_spin.setValue(1)
+        ccdm_grid.addWidget(self.ccdm_grad_accum_spin, 0, 5)
+
+        # Row 1: Learning Rate, Weight Decay, Seed
+        ccdm_grid.addWidget(QLabel("Learning Rate:"), 1, 0)
+        self.ccdm_lr_spin = QDoubleSpinBox()
+        self.ccdm_lr_spin.setRange(0.00000001, 1.0)
+        self.ccdm_lr_spin.setDecimals(8)
+        self.ccdm_lr_spin.setValue(0.00005)
+        ccdm_grid.addWidget(self.ccdm_lr_spin, 1, 1)
+
+        ccdm_grid.addWidget(QLabel("Weight Decay:"), 1, 2)
+        self.ccdm_wd_spin = QDoubleSpinBox()
+        self.ccdm_wd_spin.setRange(0.0, 1.0)
+        self.ccdm_wd_spin.setDecimals(6)
+        self.ccdm_wd_spin.setValue(0.01)
+        ccdm_grid.addWidget(self.ccdm_wd_spin, 1, 3)
+
+        ccdm_grid.addWidget(QLabel("Seed:"), 1, 4)
+        self.ccdm_seed_spin = QSpinBox()
+        self.ccdm_seed_spin.setRange(0, 2147483647)
+        self.ccdm_seed_spin.setValue(42)
+        ccdm_grid.addWidget(self.ccdm_seed_spin, 1, 5)
+
+        # Row 2: Scheduler Type, Warmup Steps, Warmup Ratio
+        ccdm_grid.addWidget(QLabel("Scheduler Type:"), 2, 0)
+        self.ccdm_scheduler_combo = QComboBox()
+        self.ccdm_scheduler_combo.addItems([
+            "linear",
+            "cosine",
+            "cosine_with_restarts",
+            "polynomial",
+            "constant",
+            "constant_with_warmup",
+        ])
+        ccdm_grid.addWidget(self.ccdm_scheduler_combo, 2, 1)
+
+        ccdm_grid.addWidget(QLabel("Warmup Steps:"), 2, 2)
+        self.ccdm_warmup_steps_spin = QSpinBox()
+        self.ccdm_warmup_steps_spin.setRange(0, 1000000)
+        self.ccdm_warmup_steps_spin.setValue(0)
+        ccdm_grid.addWidget(self.ccdm_warmup_steps_spin, 2, 3)
+
+        ccdm_grid.addWidget(QLabel("Warmup Ratio:"), 2, 4)
+        self.ccdm_warmup_ratio_spin = QDoubleSpinBox()
+        self.ccdm_warmup_ratio_spin.setRange(0.0, 1.0)
+        self.ccdm_warmup_ratio_spin.setDecimals(4)
+        self.ccdm_warmup_ratio_spin.setValue(0.0)
+        ccdm_grid.addWidget(self.ccdm_warmup_ratio_spin, 2, 5)
+
+        # Row 3: Max Steps, Max Grad Norm
+        ccdm_grid.addWidget(QLabel("Max Steps:"), 3, 0)
+        self.ccdm_max_steps_edit = QLineEdit()
+        self.ccdm_max_steps_edit.setPlaceholderText("Optional (e.g. 500)")
+        ccdm_grid.addWidget(self.ccdm_max_steps_edit, 3, 1)
+
+        ccdm_grid.addWidget(QLabel("Max Grad Norm:"), 3, 2)
+        self.ccdm_max_grad_norm_edit = QLineEdit("1.0")
+        self.ccdm_max_grad_norm_edit.setPlaceholderText("Optional (e.g. 1.0)")
+        ccdm_grid.addWidget(self.ccdm_max_grad_norm_edit, 3, 3)
+
+        # Row 4: Checkboxes (Shuffle, FP16, BF16)
+        check_box_layout = QHBoxLayout()
+        self.ccdm_shuffle_check = QCheckBox("Shuffle Shard Data")
+        self.ccdm_shuffle_check.setChecked(True)
+        check_box_layout.addWidget(self.ccdm_shuffle_check)
+
+        self.ccdm_fp16_check = QCheckBox("FP16 Precision")
+        self.ccdm_fp16_check.setChecked(False)
+        check_box_layout.addWidget(self.ccdm_fp16_check)
+
+        self.ccdm_bf16_check = QCheckBox("BF16 Precision")
+        self.ccdm_bf16_check.setChecked(False)
+        check_box_layout.addWidget(self.ccdm_bf16_check)
+        check_box_layout.addStretch()
+
+        ccdm_grid.addLayout(check_box_layout, 4, 0, 1, 6)
+
+        ccdm_outer_layout.addWidget(self.ccdm_params_group)
+        params_layout.addWidget(self.ccdm_params_widget)
+        self.ccdm_params_widget.hide()
 
         layout.addWidget(self.params_group)
         layout.addStretch()
@@ -920,12 +1038,17 @@ class MainWindow(QMainWindow):
             )
             return
 
-        default_filename = f"{model_id}_v{model_version}.pt2"
+        ext = "".join(src_path.suffixes) if src_path.suffixes else ".pt2"
+        default_filename = f"{model_id}_v{model_version}{ext}"
+        if "gz" in ext:
+            filter_spec = "Compressed Model Archive (*.gz *.tar.gz);;All Files (*)"
+        else:
+            filter_spec = "PyTorch Checkpoints (*.pt2);;All Files (*)"
         dest_path_str, _ = QFileDialog.getSaveFileName(
             self,
             "Save Model Artifact",
             default_filename,
-            "PyTorch Checkpoints (*.pt2);;All Files (*)",
+            filter_spec,
         )
 
         if not dest_path_str:
@@ -988,12 +1111,21 @@ class MainWindow(QMainWindow):
         parent_layout.addWidget(footer_frame)
 
     def _on_model_type_changed(self, model_type: str) -> None:
-        """Dynamically update field descriptions and file extensions based on model type."""
+        """Dynamically update field descriptions, file extensions, and parameter controls based on model type."""
         if model_type == "canonical_torch":
             self.model_label.setText("Model Checkpoint (.pt2):")
             self.model_path_edit.setPlaceholderText("Path to exported PyTorch 2 model (.pt2)")
             self.dataset_label.setText("Dataset File (.pt):")
             self.dataset_path_edit.setPlaceholderText("Path to canonical PyTorch dataset (.pt)")
+            self.torch_params_widget.show()
+            self.ccdm_params_widget.hide()
+        elif model_type == "canonical_causal_decoder":
+            self.model_label.setText("Model Archive (.gz, .tar.gz):")
+            self.model_path_edit.setPlaceholderText("Path to compressed Hugging Face model archive (.gz, .tar.gz)")
+            self.dataset_label.setText("Dataset File (.pt):")
+            self.dataset_path_edit.setPlaceholderText("Path to tokenized causal language model dataset (.pt)")
+            self.torch_params_widget.hide()
+            self.ccdm_params_widget.show()
         else:
             self.model_label.setText("Model Checkpoint:")
             self.model_path_edit.setPlaceholderText("Path to model checkpoint")
@@ -1039,12 +1171,14 @@ class MainWindow(QMainWindow):
         model_type = self.model_type_combo.currentText()
         if model_type == "canonical_torch":
             filter_str = "PyTorch 2 Checkpoint (*.pt2);;All Files (*)"
+        elif model_type == "canonical_causal_decoder":
+            filter_str = "Compressed Model Archive (*.gz *.tar.gz);;All Files (*)"
         else:
             filter_str = "All Files (*)"
 
         file_path, _ = QFileDialog.getOpenFileName(
             self,
-            "Select Model Checkpoint",
+            "Select Model Checkpoint / Archive",
             "",
             filter_str,
         )
@@ -1098,121 +1232,157 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Validation Error", "Please provide a model version (e.g. v1.0).")
             return
 
-        # 1. Build Optimizer Payload
-        optim_type = self.optimizer_combo.currentText()
-        if optim_type == "AdamW":
-            try:
-                eps_val = float(self.adamw_eps_edit.text().strip())
-            except ValueError:
-                eps_val = 1e-8
-            optim_dict = {
-                "type": "AdamW",
-                "parameters": {
-                    "learning_rate": self.adamw_lr_spin.value(),
-                    "betas": [self.adamw_b1_spin.value(), self.adamw_b2_spin.value()],
-                    "eps": eps_val,
-                    "weight_decay": self.adamw_wd_spin.value(),
-                    "amsgrad": self.adamw_amsgrad_check.isChecked(),
-                },
+        if model_type == "canonical_causal_decoder":
+            max_steps_val: Optional[int] = None
+            max_steps_text = self.ccdm_max_steps_edit.text().strip()
+            if max_steps_text:
+                try:
+                    max_steps_val = int(max_steps_text)
+                except ValueError:
+                    QMessageBox.warning(self, "Validation Error", "Max Steps must be a valid integer or empty.")
+                    return
+
+            max_grad_norm_val: Optional[float] = None
+            max_grad_text = self.ccdm_max_grad_norm_edit.text().strip()
+            if max_grad_text:
+                try:
+                    max_grad_norm_val = float(max_grad_text)
+                except ValueError:
+                    QMessageBox.warning(self, "Validation Error", "Max Grad Norm must be a valid number or empty.")
+                    return
+
+            training_config = {
+                "seed": self.ccdm_seed_spin.value(),
+                "batch_size": self.ccdm_batch_size_spin.value(),
+                "epochs": self.ccdm_epochs_spin.value(),
+                "max_steps": max_steps_val,
+                "learning_rate": self.ccdm_lr_spin.value(),
+                "weight_decay": self.ccdm_wd_spin.value(),
+                "gradient_accumulation_steps": self.ccdm_grad_accum_spin.value(),
+                "max_grad_norm": max_grad_norm_val,
+                "scheduler_type": self.ccdm_scheduler_combo.currentText(),
+                "warmup_steps": self.ccdm_warmup_steps_spin.value(),
+                "warmup_ratio": self.ccdm_warmup_ratio_spin.value(),
+                "fp16": self.ccdm_fp16_check.isChecked(),
+                "bf16": self.ccdm_bf16_check.isChecked(),
+                "shuffle": self.ccdm_shuffle_check.isChecked(),
             }
-        else:  # SGD
-            optim_dict = {
-                "type": "SGD",
-                "parameters": {
-                    "learning_rate": self.sgd_lr_spin.value(),
-                    "momentum": self.sgd_momentum_spin.value(),
-                    "dampening": self.sgd_dampening_spin.value(),
-                    "weight_decay": self.sgd_wd_spin.value(),
-                    "nesterov": self.sgd_nesterov_check.isChecked(),
-                },
+        else:
+            # 1. Build Optimizer Payload
+            optim_type = self.optimizer_combo.currentText()
+            if optim_type == "AdamW":
+                try:
+                    eps_val = float(self.adamw_eps_edit.text().strip())
+                except ValueError:
+                    eps_val = 1e-8
+                optim_dict = {
+                    "type": "AdamW",
+                    "parameters": {
+                        "learning_rate": self.adamw_lr_spin.value(),
+                        "betas": [self.adamw_b1_spin.value(), self.adamw_b2_spin.value()],
+                        "eps": eps_val,
+                        "weight_decay": self.adamw_wd_spin.value(),
+                        "amsgrad": self.adamw_amsgrad_check.isChecked(),
+                    },
+                }
+            else:  # SGD
+                optim_dict = {
+                    "type": "SGD",
+                    "parameters": {
+                        "learning_rate": self.sgd_lr_spin.value(),
+                        "momentum": self.sgd_momentum_spin.value(),
+                        "dampening": self.sgd_dampening_spin.value(),
+                        "weight_decay": self.sgd_wd_spin.value(),
+                        "nesterov": self.sgd_nesterov_check.isChecked(),
+                    },
+                }
+
+            # 2. Build Loss Criterion Payload
+            loss_type = self.loss_combo.currentText()
+            loss_params: Dict[str, Any] = {
+                "reduction": self.loss_reduction_combo.currentText(),
+            }
+            if loss_type == "SmoothL1Loss":
+                loss_params["beta"] = self.smooth_l1_beta_spin.value()
+            elif loss_type == "CrossEntropyLoss":
+                loss_params["label_smoothing"] = self.ce_smoothing_spin.value()
+
+            loss_dict = {
+                "type": loss_type,
+                "parameters": loss_params,
             }
 
-        # 2. Build Loss Criterion Payload
-        loss_type = self.loss_combo.currentText()
-        loss_params: Dict[str, Any] = {
-            "reduction": self.loss_reduction_combo.currentText(),
-        }
-        if loss_type == "SmoothL1Loss":
-            loss_params["beta"] = self.smooth_l1_beta_spin.value()
-        elif loss_type == "CrossEntropyLoss":
-            loss_params["label_smoothing"] = self.ce_smoothing_spin.value()
+            # 3. Build Scheduler Payload
+            sched_type = self.scheduler_combo.currentText()
+            sched_dict: Optional[Dict[str, Any]] = None
+            if sched_type == "CosineAnnealingLR":
+                sched_dict = {
+                    "type": "CosineAnnealingLR",
+                    "parameters": {
+                        "T_max": self.cosine_tmax_spin.value(),
+                        "eta_min": self.cosine_etamin_spin.value(),
+                    },
+                }
+            elif sched_type == "StepLR":
+                sched_dict = {
+                    "type": "StepLR",
+                    "parameters": {
+                        "step_size": self.step_size_spin.value(),
+                        "gamma": self.step_gamma_spin.value(),
+                    },
+                }
+            elif sched_type == "LinearLR":
+                sched_dict = {
+                    "type": "LinearLR",
+                    "parameters": {
+                        "start_factor": self.linear_start_spin.value(),
+                        "end_factor": self.linear_end_spin.value(),
+                        "total_iters": self.linear_iters_spin.value(),
+                    },
+                }
+            elif sched_type == "ConstantLR":
+                sched_dict = {
+                    "type": "ConstantLR",
+                    "parameters": {
+                        "factor": self.constant_factor_spin.value(),
+                        "total_iters": self.constant_iters_spin.value(),
+                    },
+                }
+            elif sched_type == "ExponentialLR":
+                sched_dict = {
+                    "type": "ExponentialLR",
+                    "parameters": {
+                        "gamma": self.exp_gamma_spin.value(),
+                    },
+                }
 
-        loss_dict = {
-            "type": loss_type,
-            "parameters": loss_params,
-        }
-
-        # 3. Build Scheduler Payload
-        sched_type = self.scheduler_combo.currentText()
-        sched_dict: Optional[Dict[str, Any]] = None
-        if sched_type == "CosineAnnealingLR":
-            sched_dict = {
-                "type": "CosineAnnealingLR",
-                "parameters": {
-                    "T_max": self.cosine_tmax_spin.value(),
-                    "eta_min": self.cosine_etamin_spin.value(),
-                },
-            }
-        elif sched_type == "StepLR":
-            sched_dict = {
-                "type": "StepLR",
-                "parameters": {
-                    "step_size": self.step_size_spin.value(),
-                    "gamma": self.step_gamma_spin.value(),
-                },
-            }
-        elif sched_type == "LinearLR":
-            sched_dict = {
-                "type": "LinearLR",
-                "parameters": {
-                    "start_factor": self.linear_start_spin.value(),
-                    "end_factor": self.linear_end_spin.value(),
-                    "total_iters": self.linear_iters_spin.value(),
-                },
-            }
-        elif sched_type == "ConstantLR":
-            sched_dict = {
-                "type": "ConstantLR",
-                "parameters": {
-                    "factor": self.constant_factor_spin.value(),
-                    "total_iters": self.constant_iters_spin.value(),
-                },
-            }
-        elif sched_type == "ExponentialLR":
-            sched_dict = {
-                "type": "ExponentialLR",
-                "parameters": {
-                    "gamma": self.exp_gamma_spin.value(),
-                },
+            # 4. Assemble Top-Level Training Config
+            training_config = {
+                "batch_size": self.batch_size_spin.value(),
+                "shuffle": self.shuffle_check.isChecked(),
+                "epochs": self.epochs_spin.value(),
+                "gradient_accumulation_steps": self.grad_accum_spin.value(),
+                "optimizer": optim_dict,
+                "loss": loss_dict,
+                "scheduler": sched_dict,
             }
 
-        # 4. Assemble Top-Level Training Config
-        training_config: Dict[str, Any] = {
-            "batch_size": self.batch_size_spin.value(),
-            "shuffle": self.shuffle_check.isChecked(),
-            "epochs": self.epochs_spin.value(),
-            "gradient_accumulation_steps": self.grad_accum_spin.value(),
-            "optimizer": optim_dict,
-            "loss": loss_dict,
-            "scheduler": sched_dict,
-        }
+            # Optional constraints
+            max_steps_text = self.max_steps_edit.text().strip()
+            if max_steps_text:
+                try:
+                    training_config["max_steps"] = int(max_steps_text)
+                except ValueError:
+                    QMessageBox.warning(self, "Validation Error", "Max Steps must be a valid integer or empty.")
+                    return
 
-        # Optional constraints
-        max_steps_text = self.max_steps_edit.text().strip()
-        if max_steps_text:
-            try:
-                training_config["max_steps"] = int(max_steps_text)
-            except ValueError:
-                QMessageBox.warning(self, "Validation Error", "Max Steps must be a valid integer or empty.")
-                return
-
-        max_grad_text = self.max_grad_norm_edit.text().strip()
-        if max_grad_text:
-            try:
-                training_config["max_grad_norm"] = float(max_grad_text)
-            except ValueError:
-                QMessageBox.warning(self, "Validation Error", "Max Grad Norm must be a valid number or empty.")
-                return
+            max_grad_text = self.max_grad_norm_edit.text().strip()
+            if max_grad_text:
+                try:
+                    training_config["max_grad_norm"] = float(max_grad_text)
+                except ValueError:
+                    QMessageBox.warning(self, "Validation Error", "Max Grad Norm must be a valid number or empty.")
+                    return
 
         # Construct command
         try:

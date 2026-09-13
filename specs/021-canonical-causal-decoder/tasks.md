@@ -10,9 +10,9 @@
 
 **Purpose**: Establish adapter suite package layout and engine model type identifier.
 
-- [ ] T001 Create adapter directory structure `src/distributed_training_engine/adapters/canonical_causal_decoder/` with `training/`, `partitioning/`, `aggregation/` packages and `__init__.py` files
-- [ ] T002 Add `CANONICAL_CAUSAL_DECODER = "canonical_causal_decoder"` to `ModelType` enum in `src/distributed_training_engine/model_type.py`
-- [ ] T003 [P] Implement `CanonicalCausalDecoderTrainingConfig` dataclass with type validation and defaults in `src/distributed_training_engine/adapters/canonical_causal_decoder/training/canonical_causal_decoder_config.py`
+- [X] T001 Create adapter directory structure `src/distributed_training_engine/adapters/canonical_causal_decoder/` with `training/`, `partitioning/`, `aggregation/` packages and `__init__.py` files
+- [X] T002 Add `CANONICAL_CAUSAL_DECODER = "canonical_causal_decoder"` to `ModelType` enum in `src/distributed_training_engine/model_type.py`
+- [X] T003 [P] Implement `CanonicalCausalDecoderTrainingConfig` dataclass with type validation and defaults in `src/distributed_training_engine/adapters/canonical_causal_decoder/training/canonical_causal_decoder_config.py`
 
 ---
 
@@ -22,9 +22,9 @@
 
 **⚠️ CRITICAL**: Foundational tasks must be completed before user story workflows can resolve adapters.
 
-- [ ] T004 Register `CANONICAL_CAUSAL_DECODER` adapter resolution in `src/distributed_training_engine/training/trainer_adapter_registery.py`
-- [ ] T005 [P] Register `CANONICAL_CAUSAL_DECODER` adapter resolution in `src/distributed_training_engine/partitioning/partitioner_adapter_registery.py`
-- [ ] T006 [P] Register `CANONICAL_CAUSAL_DECODER` adapter resolution in `src/distributed_training_engine/aggregation/aggregator_adapter_registery.py`
+- [X] T004 Register `CANONICAL_CAUSAL_DECODER` adapter resolution in `src/distributed_training_engine/training/trainer_adapter_registery.py`
+- [X] T005 [P] Register `CANONICAL_CAUSAL_DECODER` adapter resolution in `src/distributed_training_engine/partitioning/partitioner_adapter_registery.py`
+- [X] T006 [P] Register `CANONICAL_CAUSAL_DECODER` adapter resolution in `src/distributed_training_engine/aggregation/aggregator_adapter_registery.py`
 
 **Checkpoint**: Foundation ready - adapter registration points and configuration schemas established.
 
@@ -38,11 +38,11 @@
 
 ### Implementation for User Story 1
 
-- [ ] T007 [P] [US1] Implement archive extraction to `model_unpacked/`, envelope checks, and artifact verification in `validate()` in `src/distributed_training_engine/adapters/canonical_causal_decoder/training/canonical_causal_decoder_trainer.py`
-- [ ] T008 [US1] Implement device resolution, model/tokenizer loading, dataset schema verification (`input_ids`, `attention_mask`, `labels`), immutable baseline snapshotting, and Hugging Face `Trainer` initialization in `prepare()` in `src/distributed_training_engine/adapters/canonical_causal_decoder/training/canonical_causal_decoder_trainer.py`
-- [ ] T009 [US1] Implement fine-tuning execution and metrics tracking via `hf_trainer.train()` in `train()` in `src/distributed_training_engine/adapters/canonical_causal_decoder/training/canonical_causal_decoder_trainer.py`
-- [ ] T010 [US1] Implement parameter delta calculation ($\Delta W = W_{\text{trained}} - W_{\text{base}}$) and `.safetensors` update serialization in `save_result()` in `src/distributed_training_engine/adapters/canonical_causal_decoder/training/canonical_causal_decoder_trainer.py`
-- [ ] T011 [US1] Export `CanonicalCausalDecoderTrainer` and `CanonicalCausalDecoderTrainingConfig` in `src/distributed_training_engine/adapters/canonical_causal_decoder/training/__init__.py`
+- [X] T007 [P] [US1] Implement archive extraction to `model_unpacked/`, envelope checks, and artifact verification in `validate()` in `src/distributed_training_engine/adapters/canonical_causal_decoder/training/canonical_causal_decoder_trainer.py`
+- [X] T008 [US1] Implement device resolution, model/tokenizer loading, dataset schema verification (`input_ids`, `attention_mask`, `labels`), immutable baseline snapshotting, and Hugging Face `Trainer` initialization in `prepare()` in `src/distributed_training_engine/adapters/canonical_causal_decoder/training/canonical_causal_decoder_trainer.py`
+- [X] T009 [US1] Implement fine-tuning execution and metrics tracking via `hf_trainer.train()` in `train()` in `src/distributed_training_engine/adapters/canonical_causal_decoder/training/canonical_causal_decoder_trainer.py`
+- [X] T010 [US1] Implement parameter delta calculation ($\Delta W = W_{\text{trained}} - W_{\text{base}}$) and `.safetensors` update serialization in `save_result()` in `src/distributed_training_engine/adapters/canonical_causal_decoder/training/canonical_causal_decoder_trainer.py`
+- [X] T011 [US1] Export `CanonicalCausalDecoderTrainer` and `CanonicalCausalDecoderTrainingConfig` in `src/distributed_training_engine/adapters/canonical_causal_decoder/training/__init__.py`
 
 **Checkpoint**: User Story 1 functional - Trainer nodes can locally fine-tune Hugging Face causal LM models and generate parameter updates.
 
@@ -56,9 +56,9 @@
 
 ### Implementation for User Story 2
 
-- [ ] T012 [US2] Implement representative sample extraction (`CreateSample`) generating `<dataset_id>_sample.pt` with canonical keys in `src/distributed_training_engine/adapters/canonical_causal_decoder/partitioning/canonical_causal_decoder_partitioner.py`
-- [ ] T013 [US2] Implement tokenized dataset sharding (`CreateShards`) slicing tensors along dimension 0 into `<dataset_id>_<shard_id>.pt` files in `src/distributed_training_engine/adapters/canonical_causal_decoder/partitioning/canonical_causal_decoder_partitioner.py`
-- [ ] T014 [US2] Export `CanonicalCausalDecoderPartitioner` in `src/distributed_training_engine/adapters/canonical_causal_decoder/partitioning/__init__.py`
+- [X] T012 [US2] Implement representative sample extraction (`CreateSample`) generating `<dataset_id>_sample.pt` with canonical keys in `src/distributed_training_engine/adapters/canonical_causal_decoder/partitioning/canonical_causal_decoder_partitioner.py`
+- [X] T013 [US2] Implement tokenized dataset sharding (`CreateShards`) slicing tensors along dimension 0 into `<dataset_id>_<shard_id>.pt` files in `src/distributed_training_engine/adapters/canonical_causal_decoder/partitioning/canonical_causal_decoder_partitioner.py`
+- [X] T014 [US2] Export `CanonicalCausalDecoderPartitioner` in `src/distributed_training_engine/adapters/canonical_causal_decoder/partitioning/__init__.py`
 
 **Checkpoint**: User Stories 1 and 2 functional - Dataset partitioning, sampling, and trainer execution work seamlessly together.
 
@@ -72,10 +72,10 @@
 
 ### Implementation for User Story 3
 
-- [ ] T015 [US3] Implement `.safetensors` delta deserialization and base model parameter schema validation in `LoadDelta()` and `ValidateDelta()` in `src/distributed_training_engine/adapters/canonical_causal_decoder/aggregation/canonical_causal_decoder_aggregator.py`
-- [ ] T016 [US3] Implement architecture-agnostic sample-weighted Federated Averaging ($\Delta W_{\text{avg}} = \sum \frac{n_i}{N} \Delta W_i$) in `Aggregate()` in `src/distributed_training_engine/adapters/canonical_causal_decoder/aggregation/canonical_causal_decoder_aggregator.py`
-- [ ] T017 [US3] Implement base model parameter update ($W_{\text{new}} = W_{\text{base}} + \Delta W_{\text{avg}}$), tokenizer preservation, and atomic `.gz` archive serialization in `CreateNewVersion()` in `src/distributed_training_engine/adapters/canonical_causal_decoder/aggregation/canonical_causal_decoder_aggregator.py`
-- [ ] T018 [US3] Export `CanonicalCausalDecoderAggregator` in `src/distributed_training_engine/adapters/canonical_causal_decoder/aggregation/__init__.py` and top-level package in `src/distributed_training_engine/adapters/canonical_causal_decoder/__init__.py`
+- [X] T015 [US3] Implement `.safetensors` delta deserialization and base model parameter schema validation in `LoadDelta()` and `ValidateDelta()` in `src/distributed_training_engine/adapters/canonical_causal_decoder/aggregation/canonical_causal_decoder_aggregator.py`
+- [X] T016 [US3] Implement architecture-agnostic sample-weighted Federated Averaging ($\Delta W_{\text{avg}} = \sum \frac{n_i}{N} \Delta W_i$) in `Aggregate()` in `src/distributed_training_engine/adapters/canonical_causal_decoder/aggregation/canonical_causal_decoder_aggregator.py`
+- [X] T017 [US3] Implement base model parameter update ($W_{\text{new}} = W_{\text{base}} + \Delta W_{\text{avg}}$), tokenizer preservation, and atomic `.gz` archive serialization in `CreateNewVersion()` in `src/distributed_training_engine/adapters/canonical_causal_decoder/aggregation/canonical_causal_decoder_aggregator.py`
+- [X] T018 [US3] Export `CanonicalCausalDecoderAggregator` in `src/distributed_training_engine/adapters/canonical_causal_decoder/aggregation/__init__.py` and top-level package in `src/distributed_training_engine/adapters/canonical_causal_decoder/__init__.py`
 
 **Checkpoint**: User Stories 1, 2, and 3 functional - Distributed training loop (sharding → training → aggregation) fully operational.
 
@@ -89,8 +89,8 @@
 
 ### Implementation for User Story 4
 
-- [ ] T019 [US4] Verify dynamic lazy import registration and error handling for `CANONICAL_CAUSAL_DECODER` in `src/distributed_training_engine/training/trainer_adapter_registery.py`, `partitioning/partitioner_adapter_registery.py`, and `aggregation/aggregator_adapter_registery.py`
-- [ ] T020 [US4] Audit distributed training engine codebase to confirm zero modifications to model-agnostic orchestrators (`TrainingOrchestrator`, `PartitioningOrchestrator`, `AggregationOrchestrator`) and shared DTOs
+- [X] T019 [US4] Verify dynamic lazy import registration and error handling for `CANONICAL_CAUSAL_DECODER` in `src/distributed_training_engine/training/trainer_adapter_registery.py`, `partitioning/partitioner_adapter_registery.py`, and `aggregation/aggregator_adapter_registery.py`
+- [X] T020 [US4] Audit distributed training engine codebase to confirm zero modifications to model-agnostic orchestrators (`TrainingOrchestrator`, `PartitioningOrchestrator`, `AggregationOrchestrator`) and shared DTOs
 
 **Checkpoint**: Core engine respects the Open-Closed Principle with clean adapter pluggability.
 
@@ -104,10 +104,10 @@
 
 ### Implementation for User Story 5
 
-- [ ] T021 [P] [US5] Update CLI `submit-training` subparser with `--model-type` choice and causal decoder configuration loading in `src/Client/presentation/console_ui.py`
-- [ ] T022 [US5] Add `canonical_causal_decoder` to `model_type_combo` and implement dynamic artifact picker switching (`.gz`/`.tar.gz` vs `.pt2`) in `src/Client/presentation/gui/main_window.py`
-- [ ] T023 [US5] Implement dynamic training parameters sub-panel in `MainWindow` for `CanonicalCausalDecoderTrainingConfig` fields in `src/Client/presentation/gui/main_window.py`
-- [ ] T024 [US5] Adapt GUI worker submission payload construction to package causal decoder hyperparameters into `SubmitTrainingCommand` in `src/Client/presentation/gui/main_window.py`
+- [X] T021 [P] [US5] Update CLI `submit-training` subparser with `--model-type` choice and causal decoder configuration loading in `src/Client/presentation/console_ui.py`
+- [X] T022 [US5] Add `canonical_causal_decoder` to `model_type_combo` and implement dynamic artifact picker switching (`.gz`/`.tar.gz` vs `.pt2`) in `src/Client/presentation/gui/main_window.py`
+- [X] T023 [US5] Implement dynamic training parameters sub-panel in `MainWindow` for `CanonicalCausalDecoderTrainingConfig` fields in `src/Client/presentation/gui/main_window.py`
+- [X] T024 [US5] Adapt GUI worker submission payload construction to package causal decoder hyperparameters into `SubmitTrainingCommand` in `src/Client/presentation/gui/main_window.py`
 
 **Checkpoint**: Client presentation interfaces (both GUI and CLI) dynamically support both model types seamlessly.
 
@@ -121,10 +121,10 @@
 
 ### Implementation for User Story 6
 
-- [ ] T025 [P] [US6] Create `samples/canonical_causal_decoder_training_test/setup.py` to start background services natively, download `TinyStories-1M` model and dataset from Hugging Face Hub, and produce `.gz` and `.pt` test assets
-- [ ] T026 [US6] Create `samples/canonical_causal_decoder_training_test/submit.py` to submit training task via Client CLI, monitor 2-trainer execution, and await version 1 model aggregation
-- [ ] T027 [P] [US6] Create `samples/canonical_causal_decoder_training_test/verify.py` to evaluate validation loss and perplexity on version 0 and version 1 models using the hold-out validation set
-- [ ] T028 [P] [US6] Create `samples/canonical_causal_decoder_training_test/clean.py` to terminate tracked background processes and remove temporary test directories
+- [X] T025 [P] [US6] Create `samples/canonical_causal_decoder_training_test/setup.py` to start background services natively, download `TinyStories-1M` model and dataset from Hugging Face Hub, and produce `.gz` and `.pt` test assets
+- [X] T026 [US6] Create `samples/canonical_causal_decoder_training_test/submit.py` to submit training task via Client CLI, monitor 2-trainer execution, and await version 1 model aggregation
+- [X] T027 [P] [US6] Create `samples/canonical_causal_decoder_training_test/verify.py` to evaluate validation loss and perplexity on version 0 and version 1 models using the hold-out validation set
+- [X] T028 [P] [US6] Create `samples/canonical_causal_decoder_training_test/clean.py` to terminate tracked background processes and remove temporary test directories
 
 **Checkpoint**: End-to-end verification sample completely validates the cluster lifecycle with real models and datasets.
 
@@ -134,8 +134,8 @@
 
 **Purpose**: Quality verification and final system checks.
 
-- [ ] T029 Verify Python syntax and compilation across all modified engine and presentation files via `python -m py_compile`
-- [ ] T030 Execute the complete quickstart verification workflow in `samples/canonical_causal_decoder_training_test/` per `specs/021-canonical-causal-decoder/quickstart.md`
+- [X] T029 Verify Python syntax and compilation across all modified engine and presentation files via `python -m py_compile`
+- [X] T030 Execute the complete quickstart verification workflow in `samples/canonical_causal_decoder_training_test/` per `specs/021-canonical-causal-decoder/quickstart.md`
 
 ---
 

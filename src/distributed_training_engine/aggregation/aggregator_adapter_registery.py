@@ -62,6 +62,15 @@ class AggregatorAdapterRegistery:
                     return cls._registry[key]
                 except ImportError:
                     pass
+            elif key == ModelType.CANONICAL_CAUSAL_DECODER.value:
+                try:
+                    from ..adapters.canonical_causal_decoder.aggregation.canonical_causal_decoder_aggregator import (
+                        CanonicalCausalDecoderAggregator,
+                    )
+                    cls.Register(ModelType.CANONICAL_CAUSAL_DECODER, CanonicalCausalDecoderAggregator)
+                    return cls._registry[key]
+                except ImportError:
+                    pass
 
             raise AggregatorAdapterNotFoundError(
                 f"No aggregator adapter registered for ModelType: '{model_type}'"

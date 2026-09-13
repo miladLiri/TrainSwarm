@@ -88,11 +88,24 @@ class SubmitTrainingCommand:
                 reason="training_config must be a dictionary.",
             )
 
-        required_keys = ("batch_size", "shuffle", "epochs", "gradient_accumulation_steps", "optimizer", "loss")
-        for key in required_keys:
-            if key not in self.training_config:
+        if self.model_type == ModelType.CANONICAL_CAUSAL_DECODER:
+            from distributed_training_engine.adapters.canonical_causal_decoder.training.canonical_causal_decoder_config import (
+                CanonicalCausalDecoderTrainingConfig,
+            )
+            try:
+                CanonicalCausalDecoderTrainingConfig.from_dict(self.training_config)
+            except Exception as exc:
                 raise SubmitTrainingValidationError(
                     field="training_config",
-                    value=list(self.training_config.keys()),
-                    reason=f"Missing required training config field '{key}'.",
-                )
+                    value=self.training_config,
+                    reason=f"Invalid causal decoder training configuration: {exc}",
+                ) from exc
+        else:
+            required_keys = ("batch_size", "shuffle", "epochs", "gradient_accumulation_steps", "optimizer", "loss")
+            for key in required_keys:
+                if key not in self.training_config:
+                    raise SubmitTrainingValidationError(
+                        field="training_config",
+                        value=list(self.training_config.keys()),
+                        reason=f"Missing required training config field '{key}'.",
+                    )

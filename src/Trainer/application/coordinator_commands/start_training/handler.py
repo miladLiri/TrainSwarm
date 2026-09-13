@@ -89,7 +89,8 @@ class StartTrainingHandler(ICommandHandler):
 
             # Step 2: Check local cache for base model; stream from Client if missing
             self.trainer_state.current_step = "Step 2/6: Checking local cache / streaming base model"
-            expected_model_name = f"{task.baseline_model_id}_{task.baseline_model_version}.pt2"
+            model_ext = ".gz" if getattr(task, "type", "") == "canonical_causal_decoder" else ".pt2"
+            expected_model_name = f"{task.baseline_model_id}_{task.baseline_model_version}{model_ext}"
             expected_model_path = self.working_directory / expected_model_name
 
             if expected_model_path.is_file():

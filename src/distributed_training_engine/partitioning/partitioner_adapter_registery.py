@@ -59,6 +59,15 @@ class PartitionerAdapterRegistery:
                     return cls._registry[key]
                 except ImportError:
                     pass
+            elif key == ModelType.CANONICAL_CAUSAL_DECODER.value:
+                try:
+                    from ..adapters.canonical_causal_decoder.partitioning.canonical_causal_decoder_partitioner import (
+                        CanonicalCausalDecoderPartitioner,
+                    )
+                    cls.Register(ModelType.CANONICAL_CAUSAL_DECODER, CanonicalCausalDecoderPartitioner)
+                    return cls._registry[key]
+                except ImportError:
+                    pass
 
             raise PartitionerAdapterNotFoundError(
                 f"No partitioner adapter registered for ModelType: '{model_type}'"
