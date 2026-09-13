@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Coordinator Detach Trainer API",
+  "description": "REST contract for detaching a trainer and transitioning its availability state",
+  "endpoint": {
+    "path": "/api/trainers/detach",
+    "method": "POST"
+  },
+  "request": {
+    "type": "object",
+    "properties": {
+      "trainerNodeId": {
+        "type": "string",
+        "description": "Unique network identifier of the trainer node",
+        "minLength": 1
+      },
+      "isTrainingComplete": {
+        "type": "boolean",
+        "description": "True if training completed successfully (transitions to IDLE), false if incomplete/failed (transitions to UNCLEAR)"
+      }
+    },
+    "required": ["trainerNodeId", "isTrainingComplete"],
+    "additionalProperties": false
+  },
+  "responses": {
+    "200": {
+      "description": "Trainer successfully detached or was not busy (idempotent success)",
+      "type": "object",
+      "properties": {
+        "trainerNodeId": { "type": "string" },
+        "status": { "type": "string", "enum": ["IDLE", "UNCLEAR", "BUSY"] },
+        "message": { "type": "string" }
+      },
+      "required": ["trainerNodeId", "status"]
+    },
+    "400": {
+      "description": "Invalid request payload (e.g. empty trainerNodeId)",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "status": { "type": "integer" },
+        "errors": { "type": "object" }
+      }
+    }
+  }
+}

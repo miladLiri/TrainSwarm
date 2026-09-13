@@ -44,6 +44,15 @@ def clean_ports() -> None:
                     subprocess.run(["taskkill", "/F", "/T", "/PID", pid_str], capture_output=True, check=False)
         except Exception:
             pass
+
+        for proc_name in ["p2pd.exe", "relay.exe"]:
+            subprocess.run(["taskkill", "/F", "/IM", proc_name], capture_output=True, check=False)
+    else:
+        for port in test_ports:
+            try:
+                subprocess.run(["fuser", "-k", f"{port}/tcp"], capture_output=True, check=False)
+            except Exception:
+                pass
     time.sleep(1.0)
 
 
@@ -261,7 +270,7 @@ def main() -> int:
             "submit-training",
             "--model-path", str((ARTIFACTS_DIR / "test_model.pt2").resolve()),
             "--dataset-path", str((ARTIFACTS_DIR / "test_dataset.pt").resolve()),
-            "--model-version", "v1.0",
+            "--model-version", "1",
             "--model-type", "canonical_torch",
             "--training-config", str((ARTIFACTS_DIR / "training_config.json").resolve()),
         ]
@@ -289,14 +298,18 @@ def main() -> int:
                     cur = conn.cursor()
                     cur.execute("SELECT shard_id, status, trainer_node_id, update_artifact_path FROM training_shards")
                     rows = [dict(r) for r in cur.fetchall()]
+                    cur.execute("SELECT count(*) as count FROM models WHERE model_version = '2'")
+                    v2_row = cur.fetchone()
+                    v2_cnt = v2_row["count"] if v2_row else 0
                     conn.close()
 
                     if rows:
                         statuses = [r["status"] for r in rows]
                         elapsed = time.time() - start_poll
-                        print(f"[{elapsed:4.1f}s] Shards ({len(rows)}): {statuses} | Trainers: {[r['trainer_node_id'] for r in rows]}")
-                        if len(rows) >= 2 and all(str(s).lower() == "completed" for s in statuses):
-                            print(f"\n[OK] All {len(rows)} shards successfully completed in {elapsed:.1f}s!\n")
+                        print(f"[{elapsed:4.1f}s] Shards ({len(rows)}): {statuses} | V2 Checkpoint: {v2_cnt > 0} | Trainers: {[r['trainer_node_id'] for r in rows]}")
+                        if len(rows) >= 2 and all(str(s).lower() == "completed" for s in statuses) and v2_cnt > 0:
+                            print(f"\n[OK] All {len(rows)} shards completed and Model v2 synthesized in {elapsed:.1f}s!\n")
+                            time.sleep(1.0)
                             completed = True
                             break
                 except Exception as e:
@@ -315,35 +328,17 @@ def main() -> int:
 
         # --- Phase 3: Assertions ---
         print("--------------------------------------------------------------------------------")
-        print("   Verifying Results and Assertions                                             ")
+        print("   Verifying Results and Assertions via verify.py                               ")
         print("--------------------------------------------------------------------------------")
-        conn = sqlite3.connect(str(db_file))
-        conn.row_factory = sqlite3.Row
-        cur = conn.cursor()
-        cur.execute("SELECT shard_id, status, trainer_node_id, update_artifact_path FROM training_shards")
-        final_shards = [dict(r) for r in cur.fetchall()]
-        conn.close()
-
-        assert len(final_shards) == 2, f"Expected 2 shards, got {len(final_shards)}"
-        trainer_ids_assigned = set()
-        for s in final_shards:
-            assert str(s["status"]).lower() == "completed"
-            assert s["trainer_node_id"]
-            trainer_ids_assigned.add(s["trainer_node_id"])
-            assert s["update_artifact_path"]
-            up_path = Path(s["update_artifact_path"])
-            assert up_path.exists() and up_path.stat().st_size > 0
-            print(f"[OK] Shard {s['shard_id']}: Completed by {s['trainer_node_id']} -> Update: {up_path.name} ({up_path.stat().st_size} bytes)")
-
-        # Verify ephemeral cleanup on trainers
-        for t_name, t_work in [("Trainer 1", trainer1_work), ("Trainer 2", trainer2_work)]:
-            pt_files = list(t_work.glob("*.pt"))
-            assert len(pt_files) == 0, f"{t_name} failed to delete ephemeral shard: {[f.name for f in pt_files]}"
-            st_files = list(t_work.glob("*.safetensors"))
-            assert len(st_files) == 0, f"{t_name} failed to delete ephemeral update: {[f.name for f in st_files]}"
-            pt2_files = list(t_work.glob("*.pt2"))
-            assert len(pt2_files) >= 1, f"{t_name} base model was unexpectedly deleted!"
-            print(f"[OK] {t_name}: Shards and updates purged, base model ({pt2_files[0].name}) retained in cache.")
+        verify_cmd = [
+            sys.executable,
+            str(SAMPLE_DIR / "verify.py"),
+            "--mode", "local",
+            "--timeout", "15",
+            "--coord-url", "http://127.0.0.1:8080",
+        ]
+        verify_res = subprocess.run(verify_cmd, cwd=str(SAMPLE_DIR), check=False)
+        assert verify_res.returncode == 0, f"Full verification script failed with code {verify_res.returncode}!"
 
         print("\n================================================================================")
         print("   >>> SUCCESS: FULL DISTRIBUTED TRAINING TEST PASSED 100% (WITHOUT DOCKER) <<< ")

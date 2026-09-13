@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Coordinator Inspection API Contracts",
+  "description": "REST query endpoints for inspecting live trainers and scheduled training tasks",
+  "endpoints": {
+    "getTrainers": {
+      "path": "/api/trainers",
+      "method": "GET",
+      "responses": {
+        "200": {
+          "description": "List of all registered trainers",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "trainerNodeId": { "type": "string" },
+              "status": { "type": "string", "enum": ["UNCLEAR", "IDLE", "BUSY"] }
+            },
+            "required": ["id", "trainerNodeId", "status"]
+          }
+        }
+      }
+    },
+    "getTrainingTasks": {
+      "path": "/api/training-tasks",
+      "method": "GET",
+      "responses": {
+        "200": {
+          "description": "List of all persisted training tasks and assignments",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "trainingTaskId": { "type": "string", "format": "uuid" },
+              "clientNodeId": { "type": "string" },
+              "modelId": { "type": "string" },
+              "modelVersion": { "type": "string" },
+              "dataSetId": { "type": "string" },
+              "shardId": { "type": "string" },
+              "trainerNodeId": { "type": "string" },
+              "submitTime": { "type": "string", "format": "date-time" }
+            },
+            "required": ["trainingTaskId", "clientNodeId", "modelId", "modelVersion", "dataSetId", "shardId"]
+          }
+        }
+      }
+    }
+  }
+}

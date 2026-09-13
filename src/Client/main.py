@@ -57,7 +57,7 @@ def main(raw_args: Optional[List[str]] = None) -> int:
     try:
         config_manager = ConfigManager()
         config = config_manager.get_config()
-        if not args or args[0] not in ("submit-training", "gui"):
+        if not args or args[0] not in ("submit-training", "gui", "watch-shards"):
             print("========================================")
             print("       TrainSwarm Training Client       ")
             print("========================================")
@@ -80,14 +80,14 @@ def main(raw_args: Optional[List[str]] = None) -> int:
         return 1
 
     # Start listening for inbound P2P requests only in daemon / GUI modes
-    is_daemon = not (args and args[0] == "submit-training")
+    is_daemon = not (args and args[0] in ("submit-training", "watch-shards"))
     if is_daemon:
         container.p2p_node_adapter.start_listening()
 
     # 3. Initialize Local SQLite Persistence
     try:
         container.database_manager.initialize()
-        if not args or args[0] not in ("submit-training", "gui"):
+        if not args or args[0] not in ("submit-training", "gui", "watch-shards"):
             print(f"[Client] Local persistence initialized at: {container.database_manager.db_path}")
     except DatabaseInitializationError as e:
         print(f"[Client] [ERROR] Failed to initialize local persistence: {e}", file=sys.stderr)
@@ -96,7 +96,7 @@ def main(raw_args: Optional[List[str]] = None) -> int:
         return 1
 
     # 4. Report Coordinator Adapter status
-    if not args or args[0] not in ("submit-training", "gui"):
+    if not args or args[0] not in ("submit-training", "gui", "watch-shards"):
         if container.coordinator_adapter:
             print(f"[Client] Coordinator adapter initialized for: {container.coordinator_adapter.base_url}")
         else:
@@ -107,7 +107,10 @@ def main(raw_args: Optional[List[str]] = None) -> int:
         if args and args[0] == "gui":
             return launch_gui(container)
 
-        ui = ConsoleUI(submit_training_handler=container.submit_training_handler)
+        ui = ConsoleUI(
+            submit_training_handler=container.submit_training_handler,
+            get_training_shards_handler=container.get_training_shards_handler,
+        )
         return ui.run(args)
     finally:
         if is_daemon:

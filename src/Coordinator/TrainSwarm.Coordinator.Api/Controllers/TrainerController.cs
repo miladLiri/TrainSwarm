@@ -46,6 +46,40 @@ public class TrainerController : ControllerBase
         return Ok(response);
     }
 
+    [HttpPost("detach")]
+    [ProducesResponseType(typeof(DetachTrainerResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> DetachTrainer([FromBody] DetachTrainerRequest request, CancellationToken ct = default)
+    {
+        var result = await _trainerService.DetachTrainerAsync(request, ct);
+
+        if (result.IsError)
+        {
+            var modelState = new ModelStateDictionary();
+            foreach (var error in result.Errors)
+            {
+                modelState.AddModelError(error.Code, error.Description);
+            }
+            return ValidationProblem(modelState);
+        }
+
+        return Ok(result.Value);
+    }
+
+    [HttpGet]
+    [ProducesResponseType(typeof(System.Collections.Generic.List<TrainerDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetTrainers(CancellationToken ct = default)
+    {
+        var result = await _trainerService.GetTrainersAsync(ct);
+        if (result.IsError)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = result.FirstError.Description });
+        }
+        return Ok(result.Value);
+    }
+
     [HttpPost("clear")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]

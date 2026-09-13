@@ -94,4 +94,84 @@ public class TrainerService
             return Error.Failure("Trainer.ConnectionFailed", "An error occurred while saving trainer connection.");
         }
     }
+
+    public async Task<ErrorOr<DetachTrainerResult>> DetachTrainerAsync(
+        DetachTrainerRequest request,
+        CancellationToken ct = default)
+    {
+        if (request == null)
+        {
+            return Error.Validation("Invalid.Request", "Request body cannot be null.");
+        }
+
+        var trainerNodeId = request.TrainerNodeId?.Trim();
+        if (string.IsNullOrWhiteSpace(trainerNodeId))
+        {
+            _logger.LogWarning("DetachTrainer rejected: TrainerNodeId is required.");
+            return Error.Validation("Invalid.TrainerNodeId", "TrainerNodeId cannot be null, empty, or whitespace.");
+        }
+
+        try
+        {
+            var trainer = await _dbContext.Trainers
+                .FirstOrDefaultAsync(t => t.TrainerNodeId == trainerNodeId, ct);
+
+            if (trainer == null)
+            {
+                _logger.LogInformation("DetachTrainer: TrainerNodeId={TrainerNodeId} not found; returning success no-op.", trainerNodeId);
+                return new DetachTrainerResult(trainerNodeId, TrainerStatus.IDLE.ToString(), "Trainer not found; no-op success.");
+            }
+
+            if (trainer.Status != TrainerStatus.BUSY)
+            {
+                _logger.LogInformation("DetachTrainer: TrainerNodeId={TrainerNodeId} status is {Status} (not BUSY); returning success no-op.",
+                    trainerNodeId, trainer.Status);
+                return new DetachTrainerResult(trainerNodeId, trainer.Status.ToString(), "Trainer is not busy; no state change needed.");
+            }
+
+            // Status is BUSY
+            if (request.IsTrainingComplete)
+            {
+                trainer.Status = TrainerStatus.IDLE;
+            }
+            else
+            {
+                trainer.Status = TrainerStatus.UNCLEAR;
+            }
+
+            await _dbContext.SaveChangesAsync(ct);
+            _logger.LogInformation("DetachTrainer: TrainerNodeId={TrainerNodeId} transitioned to {Status} (IsTrainingComplete={IsComplete})",
+                trainerNodeId, trainer.Status, request.IsTrainingComplete);
+
+            return new DetachTrainerResult(trainerNodeId, trainer.Status.ToString(), $"Trainer status transitioned to {trainer.Status}.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to detach trainer for TrainerNodeId={TrainerNodeId}", trainerNodeId);
+            return Error.Failure("Trainer.DetachFailed", "An error occurred while detaching trainer.");
+        }
+    }
+
+    public async Task<ErrorOr<System.Collections.Generic.List<TrainerDto>>> GetTrainersAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            var trainers = await _dbContext.Trainers
+                .AsNoTracking()
+                .Select(t => new TrainerDto
+                {
+                    Id = t.Id,
+                    TrainerNodeId = t.TrainerNodeId,
+                    Status = t.Status.ToString()
+                })
+                .ToListAsync(ct);
+
+            return trainers;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to retrieve trainers.");
+            return Error.Failure("Trainers.QueryFailed", "Failed to retrieve trainers.");
+        }
+    }
 }

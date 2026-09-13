@@ -16,6 +16,8 @@ try:
     from Client.application.commands.transfer_model import TransferModelCommandHandler
     from Client.application.commands.transfer_shard import TransferShardCommandHandler
     from Client.application.commands.update_model import UpdateModelCommandHandler
+    from Client.application.queries.get_training_shards import GetTrainingShardsQueryHandler
+    from Client.application.queries.get_trained_models import GetTrainedModelsQueryHandler
 except ImportError:
     from config import ClientConfig, ConfigManager
     from application.state import ClientState
@@ -28,6 +30,8 @@ except ImportError:
     from application.commands.transfer_model import TransferModelCommandHandler
     from application.commands.transfer_shard import TransferShardCommandHandler
     from application.commands.update_model import UpdateModelCommandHandler
+    from application.queries.get_training_shards import GetTrainingShardsQueryHandler
+    from application.queries.get_trained_models import GetTrainedModelsQueryHandler
 
 from distributed_training_engine.training import TrainingOrchestrator
 
@@ -107,6 +111,16 @@ class DIContainer:
         )
         self._update_model_handler = UpdateModelCommandHandler(
             shard_repository=self._shard_repository,
+            coordinator_adapter=self._coordinator_adapter,
+            model_repository=self._model_repository,
+            client_state=self._state,
+            working_directory=self._config.working_directory,
+        )
+        self._get_training_shards_handler = GetTrainingShardsQueryHandler(
+            shard_repository=self._shard_repository
+        )
+        self._get_trained_models_handler = GetTrainedModelsQueryHandler(
+            model_repository=self._model_repository
         )
 
         self._p2p_node_adapter.get_training_task_handler = self._get_training_task_handler
@@ -190,3 +204,13 @@ class DIContainer:
         if hasattr(self, "_state") and self._state and self._state.client_node_id:
             self._submit_training_handler.client_node_id = self._state.client_node_id
         return self._submit_training_handler
+
+    @property
+    def get_training_shards_handler(self) -> GetTrainingShardsQueryHandler:
+        """Access GetTrainingShardsQueryHandler."""
+        return self._get_training_shards_handler
+
+    @property
+    def get_trained_models_handler(self) -> GetTrainedModelsQueryHandler:
+        """Access GetTrainedModelsQueryHandler."""
+        return self._get_trained_models_handler

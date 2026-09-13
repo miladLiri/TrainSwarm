@@ -10,12 +10,15 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
+import shutil
 import sys
 from typing import Any, Dict, Optional
 
 try:
     from PyQt6.QtCore import Qt
+    from PyQt6.QtGui import QColor
     from PyQt6.QtWidgets import (
+        QAbstractItemView,
         QApplication,
         QCheckBox,
         QComboBox,
@@ -26,6 +29,7 @@ try:
         QGridLayout,
         QGroupBox,
         QHBoxLayout,
+        QHeaderView,
         QLabel,
         QLineEdit,
         QMainWindow,
@@ -36,6 +40,8 @@ try:
         QScrollArea,
         QSpinBox,
         QStackedWidget,
+        QTableWidget,
+        QTableWidgetItem,
         QTabWidget,
         QVBoxLayout,
         QWidget,
@@ -258,6 +264,25 @@ QScrollArea {
     border: none;
     background-color: transparent;
 }
+
+QTableWidget {
+    background-color: #0c1424;
+    color: #e2e8f0;
+    gridline-color: #1e293b;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    font-size: 12px;
+    selection-background-color: #1e3a8a;
+    selection-color: #f8fafc;
+}
+
+QHeaderView::section {
+    background-color: #141d2e;
+    color: #94a3b8;
+    padding: 6px;
+    font-weight: 600;
+    border: 1px solid #1e293b;
+}
 """
 
 
@@ -301,6 +326,18 @@ class MainWindow(QMainWindow):
         self.logs_tab = QWidget()
         self._setup_logs_tab()
         self.tabs.addTab(self.logs_tab, "Logs")
+
+        # Tab 3: Training Shards
+        self.shards_tab = QWidget()
+        self._setup_shards_tab()
+        self.tabs.addTab(self.shards_tab, "Training Shards")
+
+        # Tab 4: Trained Versions
+        self.trained_versions_tab = QWidget()
+        self._setup_trained_versions_tab()
+        self.tabs.addTab(self.trained_versions_tab, "Trained Versions")
+
+        self.tabs.currentChanged.connect(self._on_tab_changed)
 
         # Persistent Global Footer (Submit Action, Progress Bar & Status Banner)
         self._setup_persistent_footer(main_layout)
@@ -716,6 +753,206 @@ class MainWindow(QMainWindow):
         btn_box.addWidget(clear_btn)
         layout.addLayout(btn_box)
 
+    def _setup_shards_tab(self) -> None:
+        """Construct Tab 3: Active and completed training shards view."""
+        layout = QVBoxLayout(self.shards_tab)
+        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setSpacing(10)
+
+        # Shards Table
+        self.shards_table = QTableWidget()
+        self.shards_table.setColumnCount(6)
+        self.shards_table.setHorizontalHeaderLabels([
+            "Model ID", "Version", "Shard ID", "Status", "Trainer Node ID", "Samples"
+        ])
+        self.shards_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.shards_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.shards_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.shards_table.setSortingEnabled(True)
+        self.shards_table.horizontalHeader().setStretchLastSection(True)
+        self.shards_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        layout.addWidget(self.shards_table)
+
+        # Controls bar
+        btn_box = QHBoxLayout()
+        btn_box.addStretch()
+        self.refresh_shards_btn = QPushButton("Refresh Shards")
+        self.refresh_shards_btn.setProperty("class", "secondary-btn")
+        self.refresh_shards_btn.clicked.connect(self.refresh_shards)
+        btn_box.addWidget(self.refresh_shards_btn)
+        layout.addLayout(btn_box)
+
+        # Populate initially
+        self.refresh_shards()
+
+    def refresh_shards(self) -> None:
+        """Fetch latest training shards and refresh the table."""
+        if not hasattr(self._container, "get_training_shards_handler") or not self._container.get_training_shards_handler:
+            return
+
+        try:
+            shards = self._container.get_training_shards_handler.handle()
+        except Exception as exc:
+            logger.warning("Failed to query training shards: %s", exc)
+            return
+
+        self.shards_table.setSortingEnabled(False)
+        self.shards_table.setRowCount(len(shards))
+
+        status_colors = {
+            "completed": "#22c55e",
+            "training": "#38bdf8",
+            "ready": "#f59e0b",
+            "created": "#f59e0b",
+            "failed": "#ef4444",
+        }
+
+        for row_idx, shard in enumerate(shards):
+            item_model = QTableWidgetItem(shard.model_id)
+            item_ver = QTableWidgetItem(str(shard.model_version))
+            item_shard = QTableWidgetItem(str(shard.shard_id))
+
+            status_str = str(shard.status)
+            item_status = QTableWidgetItem(status_str.upper())
+            color_hex = status_colors.get(status_str.lower(), "#cbd5e1")
+            item_status.setForeground(QColor(color_hex))
+
+            item_trainer = QTableWidgetItem(shard.trainer_node_id or "-")
+            item_samples = QTableWidgetItem(str(shard.sample_count))
+
+            self.shards_table.setItem(row_idx, 0, item_model)
+            self.shards_table.setItem(row_idx, 1, item_ver)
+            self.shards_table.setItem(row_idx, 2, item_shard)
+            self.shards_table.setItem(row_idx, 3, item_status)
+            self.shards_table.setItem(row_idx, 4, item_trainer)
+            self.shards_table.setItem(row_idx, 5, item_samples)
+
+        self.shards_table.setSortingEnabled(True)
+
+    def _setup_trained_versions_tab(self) -> None:
+        """Construct Tab 4: Persisted trained model versions and checkpoint export view."""
+        layout = QVBoxLayout(self.trained_versions_tab)
+        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setSpacing(10)
+
+        # Trained Models Table
+        self.trained_models_table = QTableWidget()
+        self.trained_models_table.setColumnCount(5)
+        self.trained_models_table.setHorizontalHeaderLabels([
+            "Model ID", "Version", "Model Type", "Dataset ID", "Artifact Path"
+        ])
+        self.trained_models_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.trained_models_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.trained_models_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.trained_models_table.setSortingEnabled(True)
+        self.trained_models_table.horizontalHeader().setStretchLastSection(True)
+        self.trained_models_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
+        layout.addWidget(self.trained_models_table)
+
+        # Controls bar
+        btn_box = QHBoxLayout()
+        self.export_artifact_btn = QPushButton("Export / Save Artifact...")
+        self.export_artifact_btn.setProperty("class", "secondary-btn")
+        self.export_artifact_btn.clicked.connect(self._export_selected_model_artifact)
+        btn_box.addWidget(self.export_artifact_btn)
+
+        btn_box.addStretch()
+
+        self.refresh_models_btn = QPushButton("Refresh Models")
+        self.refresh_models_btn.setProperty("class", "secondary-btn")
+        self.refresh_models_btn.clicked.connect(self.refresh_models)
+        btn_box.addWidget(self.refresh_models_btn)
+
+        layout.addLayout(btn_box)
+
+        # Populate initially
+        self.refresh_models()
+
+    def refresh_models(self) -> None:
+        """Fetch latest trained models and refresh the table."""
+        if not hasattr(self._container, "get_trained_models_handler") or not self._container.get_trained_models_handler:
+            return
+
+        try:
+            models = self._container.get_trained_models_handler.handle()
+        except Exception as exc:
+            logger.warning("Failed to query trained models: %s", exc)
+            return
+
+        self.trained_models_table.setSortingEnabled(False)
+        self.trained_models_table.setRowCount(len(models))
+
+        for row_idx, model in enumerate(models):
+            self.trained_models_table.setItem(row_idx, 0, QTableWidgetItem(model.model_id))
+            self.trained_models_table.setItem(row_idx, 1, QTableWidgetItem(str(model.model_version)))
+            self.trained_models_table.setItem(row_idx, 2, QTableWidgetItem(model.model_type))
+            self.trained_models_table.setItem(row_idx, 3, QTableWidgetItem(model.dataset_id))
+            self.trained_models_table.setItem(row_idx, 4, QTableWidgetItem(model.model_artifact_path))
+
+        self.trained_models_table.setSortingEnabled(True)
+
+    def _export_selected_model_artifact(self) -> None:
+        """Export the selected model checkpoint artifact to a user-chosen destination."""
+        selected_rows = self.trained_models_table.selectionModel().selectedRows()
+        if not selected_rows:
+            QMessageBox.warning(self, "Export Artifact", "Please select a model version from the table to export.")
+            return
+
+        row = selected_rows[0].row()
+        model_id_item = self.trained_models_table.item(row, 0)
+        ver_item = self.trained_models_table.item(row, 1)
+        path_item = self.trained_models_table.item(row, 4)
+
+        if not model_id_item or not ver_item or not path_item:
+            QMessageBox.warning(self, "Export Artifact", "Incomplete row selected.")
+            return
+
+        model_id = model_id_item.text()
+        model_version = ver_item.text()
+        artifact_path_str = path_item.text()
+
+        src_path = Path(artifact_path_str).resolve()
+        if not src_path.is_file():
+            QMessageBox.critical(
+                self,
+                "Export Artifact Error",
+                f"Source model artifact file does not exist on disk:\n{src_path}",
+            )
+            return
+
+        default_filename = f"{model_id}_v{model_version}.pt2"
+        dest_path_str, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Model Artifact",
+            default_filename,
+            "PyTorch Checkpoints (*.pt2);;All Files (*)",
+        )
+
+        if not dest_path_str:
+            return
+
+        try:
+            shutil.copy2(src_path, dest_path_str)
+            QMessageBox.information(
+                self,
+                "Export Successful",
+                f"Model artifact successfully exported to:\n{dest_path_str}",
+            )
+        except Exception as exc:
+            logger.error("Failed to export model artifact: %s", exc, exc_info=True)
+            QMessageBox.critical(
+                self,
+                "Export Failed",
+                f"Failed to copy model artifact:\n{exc}",
+            )
+
+    def _on_tab_changed(self, index: int) -> None:
+        """Refresh tab contents when switched."""
+        if index == 2:
+            self.refresh_shards()
+        elif index == 3:
+            self.refresh_models()
+
     def _setup_persistent_footer(self, parent_layout: QVBoxLayout) -> None:
         """Construct the persistent footer with Submit button, Progress bar, and Status banner."""
         footer_frame = QFrame()
@@ -1039,6 +1276,9 @@ class MainWindow(QMainWindow):
         self.log_text.appendPlainText(f"[SUCCESS] Model ID: {result.model_id}")
         self.log_text.appendPlainText(f"[SUCCESS] Dataset ID: {result.dataset_id}")
         self.log_text.appendPlainText(f"[SUCCESS] Task IDs: {result.training_task_ids}")
+
+        self.refresh_shards()
+        self.refresh_models()
 
         QMessageBox.information(
             self,

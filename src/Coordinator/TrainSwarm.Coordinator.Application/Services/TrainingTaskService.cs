@@ -200,4 +200,33 @@ public class TrainingTaskService
 
         return errors;
     }
+
+    public async Task<ErrorOr<List<TrainingTaskDto>>> GetTrainingTasksAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            var tasks = await _dbContext.TrainingTasks
+                .AsNoTracking()
+                .OrderBy(t => t.SubmitTime)
+                .Select(t => new TrainingTaskDto
+                {
+                    TrainingTaskId = t.TrainingTaskId,
+                    ClientNodeId = t.ClientNodeId,
+                    ModelId = t.ModelId,
+                    ModelVersion = t.ModelVersion,
+                    DataSetId = t.DataSetId,
+                    ShardId = t.ShardId,
+                    TrainerNodeId = t.TrainerNodeId,
+                    SubmitTime = t.SubmitTime
+                })
+                .ToListAsync(ct);
+
+            return tasks;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to retrieve training tasks.");
+            return Error.Failure("TrainingTasks.QueryFailed", "Failed to retrieve training tasks.");
+        }
+    }
 }

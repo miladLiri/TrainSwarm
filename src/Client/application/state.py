@@ -21,6 +21,7 @@ class ClientNode:
     bootstrap_url: str = "http://localhost:6000"
     peer_id: Optional[str] = None
     active_session: Optional[Session] = None
+    submitted: bool = False
 
 
 class ClientState:
@@ -77,3 +78,16 @@ class ClientState:
     def clear_active_session(self) -> None:
         """Clears the currently active session."""
         self._node.active_session = None
+
+    @property
+    def submitted(self) -> bool:
+        """Returns True if a training task is currently submitted and in progress."""
+        return self._node.submitted
+
+    @submitted.setter
+    def submitted(self, value: bool) -> None:
+        self._node.submitted = bool(value)
+
+    def set_submitted(self, value: bool) -> None:
+        """Sets the submitted flag indicating an active training task is in-flight."""
+        self._node.submitted = bool(value)

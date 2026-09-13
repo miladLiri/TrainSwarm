@@ -123,6 +123,13 @@ class SubmitTrainingCommandHandler:
                 except Exception as e:
                     logger.debug("Progress callback error: %s", e)
 
+        if self.client_state and getattr(self.client_state, "submitted", False):
+            logger.warning("[SubmitTraining] Training submission rejected: a task is already in progress.")
+            return SubmitTrainingResult(
+                success=False,
+                error="A training task is already submitted and in progress.",
+            )
+
         command.validate()
         normalized_training_config = self.normalize_training_config(command.training_config)
 
@@ -350,6 +357,13 @@ class SubmitTrainingCommandHandler:
             self.shard_repository.update_status(shard_pks, TrainingShardStatus.READY)
         except Exception as exc:
             logger.warning("Failed to update shard status to READY in SQLite: %s", exc)
+
+        if self.client_state:
+            if hasattr(self.client_state, "set_submitted"):
+                self.client_state.set_submitted(True)
+            elif hasattr(self.client_state, "submitted"):
+                self.client_state.submitted = True
+            logger.info("[SubmitTraining] Set ClientState.submitted = True")
 
         report_progress("Training submission completed successfully!", 100)
         return SubmitTrainingResult(

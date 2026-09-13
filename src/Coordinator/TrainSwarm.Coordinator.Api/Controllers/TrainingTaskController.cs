@@ -45,6 +45,19 @@ public class TrainingTaskController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, response);
     }
 
+    [HttpGet]
+    [ProducesResponseType(typeof(System.Collections.Generic.List<TrainingTaskDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetTrainingTasks(CancellationToken ct = default)
+    {
+        var result = await _trainingTaskService.GetTrainingTasksAsync(ct);
+        if (result.IsError)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = result.FirstError.Description });
+        }
+        return Ok(result.Value);
+    }
+
     [HttpPost("clear")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]

@@ -15,6 +15,16 @@ from application.submit_training import (
     SubmitTrainingResult,
     SubmitTrainingValidationError,
 )
+try:
+    from Client.application.queries.get_training_shards import (
+        GetTrainingShardsQuery,
+        GetTrainingShardsQueryHandler,
+    )
+except ImportError:
+    from application.queries.get_training_shards import (
+        GetTrainingShardsQuery,
+        GetTrainingShardsQueryHandler,
+    )
 
 logger = logging.getLogger("trainswarm.client.cli")
 
@@ -22,8 +32,13 @@ logger = logging.getLogger("trainswarm.client.cli")
 class ConsoleUI:
     """Provides console and command-line execution for the Training Client."""
 
-    def __init__(self, submit_training_handler: Optional[SubmitTrainingCommandHandler] = None) -> None:
+    def __init__(
+        self,
+        submit_training_handler: Optional[SubmitTrainingCommandHandler] = None,
+        get_training_shards_handler: Optional[GetTrainingShardsQueryHandler] = None,
+    ) -> None:
         self.submit_training_handler = submit_training_handler
+        self.get_training_shards_handler = get_training_shards_handler
 
     @staticmethod
     def build_parser() -> argparse.ArgumentParser:
@@ -33,6 +48,18 @@ class ConsoleUI:
             description="TrainSwarm Training Client CLI",
         )
         subparsers = parser.add_subparsers(dest="subcommand", help="Available subcommands")
+
+        # watch-shards subcommand
+        watch_parser = subparsers.add_parser(
+            "watch-shards",
+            help="Watch training shards in real time",
+        )
+        watch_parser.add_argument(
+            "--model-id",
+            type=str,
+            default=None,
+            help="Filter shards by model ID (UUID)",
+        )
 
         # submit-training subcommand
         sub_parser = subparsers.add_parser(
@@ -139,6 +166,41 @@ class ConsoleUI:
         print("========================================")
         return 0
 
+    def handle_watch_shards(self, args: argparse.Namespace) -> int:
+        """Handle execution of the watch-shards CLI subcommand."""
+        if not self.get_training_shards_handler:
+            print("[Client] [ERROR] GetTrainingShardsQueryHandler is not configured.", file=sys.stderr)
+            return 1
+
+        model_id_filter = getattr(args, "model_id", None)
+        query = GetTrainingShardsQuery(model_id=model_id_filter) if model_id_filter else None
+
+        while True:
+            shards = self.get_training_shards_handler.handle(query)
+            print("========================================================================================")
+            print("                       TrainSwarm Client: Active Training Shards                        ")
+            print("========================================================================================")
+            print(f"{'Model ID':<36} {'Ver':<5} {'Shard ID':<10} {'Status':<11} {'Trainer Node':<20}")
+            print("----------------------------------------------------------------------------------------")
+            if not shards:
+                print("  (No training shards found)")
+            else:
+                for s in shards:
+                    m_id = s.model_id
+                    ver = s.model_version
+                    shard_id = s.shard_id
+                    status = s.status.upper()
+                    node = s.trainer_node_id or "-"
+                    print(f"{m_id:<36} {ver:<5} {shard_id:<10} {status:<11} {node:<20}")
+            print("========================================================================================")
+            try:
+                choice = input("Press [Enter] to refresh, or type 'q' and press [Enter] to exit: ").strip().lower()
+                if choice in ("q", "quit", "exit"):
+                    return 0
+            except (KeyboardInterrupt, EOFError):
+                print("\n[Client] Exiting watch-shards...")
+                return 0
+
     def run(self, raw_args: Optional[List[str]] = None) -> int:
         """Parse CLI arguments or run standard console banner."""
         parser = self.build_parser()
@@ -146,6 +208,8 @@ class ConsoleUI:
 
         if args.subcommand == "submit-training":
             return self.handle_submit_training(args)
+        elif args.subcommand == "watch-shards":
+            return self.handle_watch_shards(args)
         elif args.subcommand == "gui":
             # Handled in main.py via GUI runner
             return 0

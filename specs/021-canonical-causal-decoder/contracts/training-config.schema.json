@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CanonicalCausalDecoderTrainingConfig",
+  "type": "object",
+  "properties": {
+    "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 42,
+      "description": "Random seed for reproducible dataset shuffling and weight initialization."
+    },
+    "batch_size": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 2,
+      "description": "Per-device training batch size."
+    },
+    "epochs": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1,
+      "description": "Number of complete training epochs over the assigned shard."
+    },
+    "max_steps": {
+      "type": ["integer", "null"],
+      "minimum": 1,
+      "default": null,
+      "description": "Optional maximum number of training steps. Overrides epoch-based termination."
+    },
+    "learning_rate": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "default": 0.00005,
+      "description": "Initial learning rate used by the optimizer."
+    },
+    "weight_decay": {
+      "type": "number",
+      "minimum": 0.0,
+      "default": 0.01,
+      "description": "Weight decay coefficient for AdamW optimizer."
+    },
+    "gradient_accumulation_steps": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1,
+      "description": "Number of update steps to accumulate before backward/update pass."
+    },
+    "max_grad_norm": {
+      "type": ["number", "null"],
+      "exclusiveMinimum": 0.0,
+      "default": 1.0,
+      "description": "Maximum gradient norm for gradient clipping."
+    },
+    "scheduler_type": {
+      "type": "string",
+      "enum": ["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup"],
+      "default": "linear",
+      "description": "Learning rate scheduler strategy."
+    },
+    "warmup_steps": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "Number of warmup steps for learning rate scheduler."
+    },
+    "warmup_ratio": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "default": 0.0,
+      "description": "Ratio of total training steps used for warmup."
+    },
+    "fp16": {
+      "type": "bool",
+      "default": false,
+      "description": "Whether to use 16-bit (mixed) precision training."
+    },
+    "bf16": {
+      "type": "bool",
+      "default": false,
+      "description": "Whether to use bfloat16 (mixed) precision training."
+    },
+    "shuffle": {
+      "type": "bool",
+      "default": true,
+      "description": "Whether to shuffle the dataset between epochs."
+    }
+  },
+  "additionalProperties": false
+}

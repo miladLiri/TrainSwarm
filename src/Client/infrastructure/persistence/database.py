@@ -39,12 +39,13 @@ ON training_shards (model_id, model_version, dataset_id, shard_id);
 
 CREATE_MODELS_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS models (
-    model_id TEXT PRIMARY KEY NOT NULL,
+    model_id TEXT NOT NULL,
     model_type TEXT NOT NULL,
     model_version TEXT NOT NULL,
     dataset_id TEXT NOT NULL,
     model_artifact_path TEXT NOT NULL,
-    training_config_path TEXT NOT NULL
+    training_config_path TEXT NOT NULL,
+    PRIMARY KEY (model_id, model_version)
 );
 """
 
@@ -103,6 +104,20 @@ class DatabaseManager:
                 columns = [row["name"] for row in cursor.fetchall()]
                 if "trainer_node_id" not in columns:
                     cursor.execute("ALTER TABLE training_shards ADD COLUMN trainer_node_id TEXT NULL;")
+
+                # Ensure models table has composite primary key (model_id, model_version)
+                cursor.execute("PRAGMA table_info(models);")
+                model_cols = cursor.fetchall()
+                if model_cols:
+                    pk_cols = [r["name"] for r in model_cols if r["pk"] > 0]
+                    if pk_cols == ["model_id"]:
+                        cursor.execute("ALTER TABLE models RENAME TO models_old;")
+                        cursor.execute(CREATE_MODELS_TABLE_SQL)
+                        cursor.execute(
+                            "INSERT OR IGNORE INTO models (model_id, model_type, model_version, dataset_id, model_artifact_path, training_config_path) "
+                            "SELECT model_id, model_type, model_version, dataset_id, model_artifact_path, training_config_path FROM models_old;"
+                        )
+                        cursor.execute("DROP TABLE models_old;")
 
                 conn.commit()
             logger.info("SQLite database schema initialized successfully at '%s'", self.db_path)

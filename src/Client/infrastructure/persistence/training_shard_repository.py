@@ -157,6 +157,21 @@ class ITrainingShardRepository(ABC):
         """Update shard update_artifact_path, metrics, and status when training completes."""
         pass
 
+    @abstractmethod
+    def get_by_model_version_and_dataset(
+        self,
+        model_id: str,
+        model_version: str,
+        dataset_id: str,
+    ) -> List[TrainingShard]:
+        """Retrieve all training shards for a specific model, version, and dataset."""
+        pass
+
+    @abstractmethod
+    def get_all(self) -> List[TrainingShard]:
+        """Retrieve all training shards across all models and versions."""
+        pass
+
 
 class TrainingShardRepository(ITrainingShardRepository):
     """SQLite implementation of TrainingShardRepository."""
@@ -501,4 +516,48 @@ class TrainingShardRepository(ITrainingShardRepository):
             raise PersistenceError(
                 f"Database error updating shard completed status ({model_id}, {model_version}, {dataset_id}, {shard_id}): {e}"
             ) from e
+
+    def get_by_model_version_and_dataset(
+        self,
+        model_id: str,
+        model_version: str,
+        dataset_id: str,
+    ) -> List[TrainingShard]:
+        """Retrieve all training shards for a specific model, version, and dataset."""
+        sql = """
+        SELECT id, model_id, model_type, model_version, dataset_id, shard_id,
+               artifact_path, sample_count, status, trainer_node_id, metrics, training_metadata,
+               update_artifact_path, training_task_id
+        FROM training_shards
+        WHERE model_id = ? AND model_version = ? AND dataset_id = ?
+        ORDER BY CAST(SUBSTR(shard_id, 7) AS INTEGER) ASC, shard_id ASC;
+        """
+        try:
+            with self.db.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(sql, (model_id, str(model_version), dataset_id))
+                rows = cursor.fetchall()
+                return [self._row_to_entity(r) for r in rows]
+        except sqlite3.Error as e:
+            raise PersistenceError(
+                f"Database error querying shards for ({model_id}, {model_version}, {dataset_id}): {e}"
+            ) from e
+
+    def get_all(self) -> List[TrainingShard]:
+        """Retrieve all training shards ordered by model_id, model_version, and shard_id."""
+        sql = """
+        SELECT id, model_id, model_type, model_version, dataset_id, shard_id,
+               artifact_path, sample_count, status, trainer_node_id, metrics, training_metadata,
+               update_artifact_path, training_task_id
+        FROM training_shards
+        ORDER BY model_id ASC, CAST(model_version AS INTEGER) ASC, model_version ASC, shard_id ASC;
+        """
+        try:
+            with self.db.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(sql)
+                rows = cursor.fetchall()
+                return [self._row_to_entity(r) for r in rows]
+        except sqlite3.Error as e:
+            raise PersistenceError(f"Database error querying all shards: {e}") from e
 

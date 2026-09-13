@@ -187,6 +187,81 @@ class CoordinatorAdapter:
 
         return [str(tid) for tid in task_ids]
 
+    def detach_trainer(self, trainer_node_id: str, is_training_complete: bool = True) -> bool:
+        """Request detachment of a trainer node from the Coordinator API.
+
+        Args:
+            trainer_node_id: Network identifier of trainer node.
+            is_training_complete: True if training succeeded, False if failed.
+
+        Returns:
+            True if detached successfully.
+
+        Raises:
+            CoordinatorApiError: If Coordinator returns error status.
+            CoordinatorNetworkError: If transport fails.
+        """
+        if not trainer_node_id or not str(trainer_node_id).strip():
+            raise ValueError("trainer_node_id must be a non-empty string")
+
+        url = f"{self.base_url}/api/trainers/detach"
+        payload = {
+            "trainerNodeId": str(trainer_node_id).strip(),
+            "isTrainingComplete": bool(is_training_complete),
+        }
+        headers = {"Content-Type": "application/json"}
+
+        diag_context: Dict[str, Any] = {
+            "coordinator_address": self.base_url,
+            "method": "POST",
+            "endpoint": "/api/trainers/detach",
+            "trainer_node_id": trainer_node_id,
+            "is_training_complete": is_training_complete,
+        }
+
+        try:
+            response = self._session.post(
+                url,
+                json=payload,
+                headers=headers,
+                timeout=self.timeout,
+            )
+        except requests.exceptions.Timeout as e:
+            logger.error(
+                "Detach request to Coordinator timed out after %.1fs | Context: %s",
+                self.timeout,
+                diag_context,
+            )
+            raise CoordinatorNetworkError(
+                f"Detach request to Coordinator at {self.base_url} timed out after {self.timeout}s"
+            ) from e
+        except requests.exceptions.RequestException as e:
+            logger.error(
+                "Network exception during detach_trainer with Coordinator: %s | Context: %s",
+                e,
+                diag_context,
+            )
+            raise CoordinatorNetworkError(
+                f"Network communication failed with {self.base_url}: {e}"
+            ) from e
+
+        if not response.ok:
+            error_body = response.text
+            logger.error(
+                "Coordinator detach returned HTTP %d: %s | Context: %s",
+                response.status_code,
+                error_body,
+                diag_context,
+            )
+            raise CoordinatorApiError(response.status_code, error_body)
+
+        logger.info(
+            "Successfully detached trainer %s (complete=%s) via Coordinator",
+            trainer_node_id,
+            is_training_complete,
+        )
+        return True
+
     def close(self) -> None:
         """Close underlying HTTP session if owned by adapter."""
         if self._owns_session and self._session:
