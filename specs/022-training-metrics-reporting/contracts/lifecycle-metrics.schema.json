@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TaskLifecycleReport",
+  "type": "object",
+  "required": ["task_metadata", "steps"],
+  "properties": {
+    "task_metadata": {
+      "type": "object",
+      "required": [
+        "client_node_id",
+        "model_id",
+        "model_version",
+        "data_set_id",
+        "shard_id",
+        "status",
+        "total_elapsed_sec",
+        "start_time",
+        "end_time"
+      ],
+      "properties": {
+        "client_node_id": { "type": "string" },
+        "model_id": { "type": "string" },
+        "model_version": { "type": "string" },
+        "data_set_id": { "type": "string" },
+        "shard_id": { "type": "string" },
+        "status": { "type": "string", "enum": ["COMPLETED", "FAILED"] },
+        "total_elapsed_sec": { "type": "number", "minimum": 0 },
+        "start_time": { "type": "string", "format": "date-time" },
+        "end_time": { "type": "string", "format": "date-time" },
+        "error": { "type": ["string", "null"] }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "step_number",
+          "name",
+          "status",
+          "start_time",
+          "end_time",
+          "duration_sec"
+        ],
+        "properties": {
+          "step_number": { "type": "integer", "minimum": 1, "maximum": 6 },
+          "name": { "type": "string" },
+          "status": { "type": "string", "enum": ["COMPLETED", "FAILED", "SKIPPED"] },
+          "start_time": { "type": "string", "format": "date-time" },
+          "end_time": { "type": "string", "format": "date-time" },
+          "duration_sec": { "type": "number", "minimum": 0 },
+          "details": { "type": "object" },
+          "error": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

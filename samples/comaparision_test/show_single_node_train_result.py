@@ -33,8 +33,27 @@ if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
 
 console = Console()
 
-METRICS_FILE = Path("./single_node_finetuning/training_metrics.json")
-PLOT_OUTPUT_FILE = Path("./single_node_finetuning/training_metrics_plot.png")
+DEFAULT_METRICS_FILE = Path("./single_node_finetuning/training_metrics.json")
+DEFAULT_PLOT_OUTPUT_FILE = Path("./single_node_finetuning/training_metrics_plot.png")
+
+
+def resolve_metrics_file(cli_arg: str | None = None) -> Path:
+    """Resolve training metrics file from CLI argument or default candidate paths."""
+    if cli_arg:
+        p = Path(cli_arg)
+        if p.is_dir():
+            p = p / "training_metrics.json"
+        return p
+
+    candidates = [
+        Path("./training_metrics.json"),
+        Path("./work/training_metrics.json"),
+        Path("./single_node_finetuning/training_metrics.json"),
+    ]
+    for c in candidates:
+        if c.is_file():
+            return c
+    return DEFAULT_METRICS_FILE
 
 
 def format_duration(seconds: float) -> str:
@@ -216,7 +235,7 @@ def generate_matplotlib_plots(data, output_path: Path):
     return output_path
 
 
-def main():
+def main(metrics_path_arg: str | None = None):
     console.print()
     console.print(
         Panel.fit(
@@ -228,12 +247,16 @@ def main():
     )
     console.print()
 
-    if not METRICS_FILE.exists():
-        console.print(f"[bold red]Error:[/bold red] Metrics file '{METRICS_FILE}' not found.")
-        console.print("[yellow]Please run 'python train_single_node.py' first to generate metrics.[/yellow]\n")
+    cli_arg = metrics_path_arg or (sys.argv[1] if len(sys.argv) > 1 else None)
+    metrics_file = resolve_metrics_file(cli_arg)
+    plot_output_file = metrics_file.parent / "training_metrics_plot.png"
+
+    if not metrics_file.exists():
+        console.print(f"[bold red]Error:[/bold red] Metrics file '{metrics_file}' not found.")
+        console.print("[yellow]Please run training first to generate metrics.[/yellow]\n")
         return
 
-    with open(METRICS_FILE, "r", encoding="utf-8") as f:
+    with open(metrics_file, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     meta = data.get("metadata", {})
@@ -427,7 +450,7 @@ def main():
     # 5. Matplotlib Graphical Plots (Dual Step & Epoch Horizontal Axes)
     console.rule("[bold cyan]Matplotlib Graphical Dashboard (Steps & Epochs)[/bold cyan]")
     with console.status("[bold green]Generating Matplotlib plots with dual Step & Epoch axes..."):
-        plot_path = generate_matplotlib_plots(data, PLOT_OUTPUT_FILE)
+        plot_path = generate_matplotlib_plots(data, plot_output_file)
 
     if plot_path and plot_path.exists():
         console.print(

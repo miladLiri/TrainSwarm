@@ -1,0 +1,110 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TrainingMetricsReport",
+  "type": "object",
+  "required": ["metadata", "steps", "summary"],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": [
+        "model_name",
+        "device",
+        "device_name",
+        "total_parameters",
+        "batch_size",
+        "grad_accum_steps",
+        "effective_batch_size",
+        "learning_rate",
+        "max_seq_length",
+        "total_planned_steps",
+        "num_epochs",
+        "steps_per_epoch",
+        "start_time"
+      ],
+      "properties": {
+        "model_name": { "type": "string" },
+        "device": { "type": "string", "enum": ["cuda", "cpu"] },
+        "device_name": { "type": "string" },
+        "total_parameters": { "type": "integer", "minimum": 0 },
+        "batch_size": { "type": "integer", "minimum": 1 },
+        "grad_accum_steps": { "type": "integer", "minimum": 1 },
+        "effective_batch_size": { "type": "integer", "minimum": 1 },
+        "learning_rate": { "type": "number", "exclusiveMinimum": 0 },
+        "max_seq_length": { "type": "integer", "minimum": 1 },
+        "total_planned_steps": { "type": "integer", "minimum": 1 },
+        "num_epochs": { "type": "integer", "minimum": 1 },
+        "steps_per_epoch": { "type": "integer", "minimum": 0 },
+        "start_time": { "type": "string", "format": "date-time" }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "step",
+          "epoch",
+          "loss",
+          "perplexity",
+          "accuracy",
+          "learning_rate",
+          "tokens_per_sec",
+          "total_tokens",
+          "elapsed_sec",
+          "vram_allocated_mb"
+        ],
+        "properties": {
+          "step": { "type": "integer", "minimum": 1 },
+          "epoch": { "type": "number", "minimum": 0 },
+          "loss": { "type": "number" },
+          "perplexity": { "type": "number", "minimum": 0 },
+          "accuracy": { "type": "number", "minimum": 0, "maximum": 100 },
+          "learning_rate": { "type": "number" },
+          "tokens_per_sec": { "type": "number", "minimum": 0 },
+          "total_tokens": { "type": "integer", "minimum": 0 },
+          "elapsed_sec": { "type": "number", "minimum": 0 },
+          "vram_allocated_mb": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "status",
+        "total_steps",
+        "total_epochs_trained",
+        "total_elapsed_sec",
+        "total_tokens_processed",
+        "average_tokens_per_sec",
+        "initial_loss",
+        "final_loss",
+        "initial_perplexity",
+        "final_perplexity",
+        "initial_accuracy",
+        "final_accuracy",
+        "best_loss",
+        "best_accuracy",
+        "best_step",
+        "best_epoch"
+      ],
+      "properties": {
+        "status": { "type": "string", "enum": ["completed", "finished", "failed"] },
+        "total_steps": { "type": "integer", "minimum": 0 },
+        "total_epochs_trained": { "type": "number", "minimum": 0 },
+        "total_elapsed_sec": { "type": "number", "minimum": 0 },
+        "total_tokens_processed": { "type": "integer", "minimum": 0 },
+        "average_tokens_per_sec": { "type": "number", "minimum": 0 },
+        "initial_loss": { "type": ["number", "null"] },
+        "final_loss": { "type": ["number", "null"] },
+        "initial_perplexity": { "type": ["number", "null"] },
+        "final_perplexity": { "type": ["number", "null"] },
+        "initial_accuracy": { "type": ["number", "null"] },
+        "final_accuracy": { "type": ["number", "null"] },
+        "best_loss": { "type": ["number", "null"] },
+        "best_accuracy": { "type": ["number", "null"] },
+        "best_step": { "type": ["integer", "null"] },
+        "best_epoch": { "type": ["number", "null"] }
+      }
+    }
+  }
+}
