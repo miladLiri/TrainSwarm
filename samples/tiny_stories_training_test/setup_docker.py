@@ -250,6 +250,8 @@ def start_docker_cluster(force_rebuild: bool = False) -> int:
         "-e", "P2P_RELAY_LISTEN_HTTP=8090",
         "-e", "P2P_RELAY_IDENTITY_PATH=/data/relay.key",
         "-e", "P2P_RELAY_LOG_LEVEL=info",
+        "-e", "P2P_RELAY_MAX_RELAYED_BYTES=0",
+        "-e", "P2P_RELAY_MAX_RELAY_DURATION=1h",
         "trainswarm-relay",
     ]
     relay_run = subprocess.run(relay_cmd, capture_output=True, text=True, check=False)

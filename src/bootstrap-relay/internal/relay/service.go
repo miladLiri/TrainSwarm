@@ -16,14 +16,23 @@ func NewRelayService(h host.Host, cfg *config.Config) (*circuitv2.Relay, error) 
 	// Apply limits from config
 	resources.MaxReservations = cfg.MaxReservations
 	resources.MaxCircuits = cfg.MaxCircuits
-	if resources.Limit == nil {
-		resources.Limit = circuitv2.DefaultLimit()
-	}
-	resources.Limit.Data = cfg.MaxRelayedBytes
-	resources.Limit.Duration = cfg.MaxRelayDuration
 
-	opts := []circuitv2.Option{
-		circuitv2.WithResources(resources),
+	var opts []circuitv2.Option
+	if cfg.MaxRelayedBytes <= 0 {
+		// Disable per-circuit data limits for large model and dataset transfers
+		resources.Limit = nil
+		opts = append(opts, circuitv2.WithResources(resources), circuitv2.WithInfiniteLimits())
+		log.Printf("level=info msg=\"Circuit relay initialized with infinite data limits\"")
+	} else {
+		if resources.Limit == nil {
+			resources.Limit = circuitv2.DefaultLimit()
+		}
+		resources.Limit.Data = cfg.MaxRelayedBytes
+		if cfg.MaxRelayDuration > 0 {
+			resources.Limit.Duration = cfg.MaxRelayDuration
+		}
+		opts = append(opts, circuitv2.WithResources(resources))
+		log.Printf("level=info msg=\"Circuit relay initialized with limits\" max_relayed_bytes=%d max_duration=%v", cfg.MaxRelayedBytes, cfg.MaxRelayDuration)
 	}
 
 	r, err := circuitv2.New(h, opts...)

@@ -664,7 +664,12 @@ func (m *Manager) handleModelStream(s network.Stream) {
 	}
 
 	buf := make([]byte, 64*1024)
-	_, _ = io.CopyBuffer(s, f, buf)
+	copied, copyErr := io.CopyBuffer(s, f, buf)
+	if copyErr != nil {
+		fmt.Printf("[Transfer Manager] Error streaming model %s: %v (copied %d/%d bytes)\n", header.FileName, copyErr, copied, header.FileSize)
+	} else {
+		fmt.Printf("[Transfer Manager] Successfully streamed model %s: copied %d/%d bytes\n", header.FileName, copied, header.FileSize)
+	}
 }
 
 func (m *Manager) handleShardStream(s network.Stream) {
@@ -728,7 +733,12 @@ func (m *Manager) handleShardStream(s network.Stream) {
 	}
 
 	buf := make([]byte, 64*1024)
-	_, _ = io.CopyBuffer(s, f, buf)
+	copied, copyErr := io.CopyBuffer(s, f, buf)
+	if copyErr != nil {
+		fmt.Printf("[Transfer Manager] Error streaming shard %s: %v (copied %d/%d bytes)\n", header.FileName, copyErr, copied, header.FileSize)
+	} else {
+		fmt.Printf("[Transfer Manager] Successfully streamed shard %s: copied %d/%d bytes\n", header.FileName, copied, header.FileSize)
+	}
 }
 
 func trimStreamLeadingNewline(r io.Reader) io.Reader {
@@ -786,10 +796,10 @@ func (m *Manager) handleUpdateStream(s network.Stream) {
 	}
 
 	streamReader := trimStreamLeadingNewline(io.MultiReader(dec.Buffered(), s))
-	_, err = io.CopyN(f, streamReader, req.FileSize)
+	n, err := io.CopyN(f, streamReader, req.FileSize)
 	f.Close()
-	if err != nil {
-		_ = json.NewEncoder(s).Encode(UpdateWireResp{Success: false, Error: fmt.Sprintf("failed to read update stream: %v", err)})
+	if err != nil && err != io.EOF {
+		_ = json.NewEncoder(s).Encode(UpdateWireResp{Success: false, Error: fmt.Sprintf("failed to read update stream (copied %d/%d bytes): %v", n, req.FileSize, err)})
 		return
 	}
 
@@ -893,9 +903,9 @@ func (m *Manager) GetModel(ctx context.Context, p peer.ID, modelID, modelVersion
 	defer f.Close()
 
 	streamReader := trimStreamLeadingNewline(io.MultiReader(dec.Buffered(), s))
-	_, err = io.CopyN(f, streamReader, header.FileSize)
+	n, err := io.CopyN(f, streamReader, header.FileSize)
 	if err != nil && err != io.EOF {
-		return "", fmt.Errorf("failed to download model bytes: %w", err)
+		return "", fmt.Errorf("failed to download model bytes (copied %d/%d bytes): %w", n, header.FileSize, err)
 	}
 
 	return destPath, nil
@@ -946,9 +956,9 @@ func (m *Manager) GetShard(ctx context.Context, p peer.ID, modelID, modelVersion
 	defer f.Close()
 
 	streamReader := trimStreamLeadingNewline(io.MultiReader(dec.Buffered(), s))
-	_, err = io.CopyN(f, streamReader, header.FileSize)
+	n, err := io.CopyN(f, streamReader, header.FileSize)
 	if err != nil && err != io.EOF {
-		return "", fmt.Errorf("failed to download shard bytes: %w", err)
+		return "", fmt.Errorf("failed to download shard bytes (copied %d/%d bytes): %w", n, header.FileSize, err)
 	}
 
 	return destPath, nil
@@ -984,8 +994,9 @@ func (m *Manager) SendUpdate(ctx context.Context, p peer.ID, trainingResultJSON,
 	}
 
 	buf := make([]byte, 64*1024)
-	if _, err := io.CopyBuffer(s, f, buf); err != nil {
-		return fmt.Errorf("failed to stream update bytes: %w", err)
+	copied, err := io.CopyBuffer(s, f, buf)
+	if err != nil {
+		return fmt.Errorf("failed to stream update bytes (copied %d/%d bytes): %w", copied, fi.Size(), err)
 	}
 
 	var resp UpdateWireResp

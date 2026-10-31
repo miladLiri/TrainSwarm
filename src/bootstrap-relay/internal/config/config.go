@@ -27,8 +27,8 @@ func Load() (*Config, error) {
 		IdentityPath:     getEnv("P2P_RELAY_IDENTITY_PATH", ""),
 		MaxReservations:  getEnvInt("P2P_RELAY_MAX_RESERVATIONS", 128),
 		MaxCircuits:      getEnvInt("P2P_RELAY_MAX_CIRCUITS", 16),
-		MaxRelayedBytes:  int64(getEnvInt("P2P_RELAY_MAX_RELAYED_BYTES", 10485760)), // 10MB
-		MaxRelayDuration: getEnvDuration("P2P_RELAY_MAX_RELAY_DURATION", 2*time.Minute),
+		MaxRelayedBytes:  getEnvInt64("P2P_RELAY_MAX_RELAYED_BYTES", 0), // 0 means unlimited
+		MaxRelayDuration: getEnvDuration("P2P_RELAY_MAX_RELAY_DURATION", 1*time.Hour),
 		LogLevel:         getEnv("P2P_RELAY_LOG_LEVEL", "info"),
 	}
 
@@ -52,6 +52,15 @@ func getEnv(key, defaultVal string) string {
 func getEnvInt(key string, defaultVal int) int {
 	if val, ok := os.LookupEnv(key); ok {
 		if intVal, err := strconv.Atoi(val); err == nil {
+			return intVal
+		}
+	}
+	return defaultVal
+}
+
+func getEnvInt64(key string, defaultVal int64) int64 {
+	if val, ok := os.LookupEnv(key); ok {
+		if intVal, err := strconv.ParseInt(val, 10, 64); err == nil {
 			return intVal
 		}
 	}
