@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CoordinatorSummaryReport",
+  "description": "Schema for reports/coordinator_summary.json recording coordinator scheduling telemetry",
+  "type": "object",
+  "required": [
+    "total_tasks_scheduled",
+    "rounds"
+  ],
+  "properties": {
+    "total_tasks_scheduled": { "type": "integer", "minimum": 0 },
+    "rounds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "round",
+          "model_version",
+          "task_id",
+          "registered_at",
+          "assignments",
+          "status"
+        ],
+        "properties": {
+          "round": { "type": "integer", "minimum": 1 },
+          "model_version": { "type": "integer", "minimum": 0 },
+          "task_id": { "type": "string" },
+          "registered_at": { "type": "string" },
+          "assignments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["shard_id", "trainer_node_id", "assigned_at"],
+              "properties": {
+                "shard_id": { "type": "integer" },
+                "trainer_node_id": { "type": "string" },
+                "assigned_at": { "type": "string" },
+                "completed_at": { "type": ["string", "null"] }
+              }
+            }
+          },
+          "scheduling_latency_seconds": { "type": "number", "minimum": 0.0 },
+          "status": { "type": "string" }
+        }
+      }
+    }
+  }
+}

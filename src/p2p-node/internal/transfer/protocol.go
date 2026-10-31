@@ -1,6 +1,7 @@
 package transfer
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -678,10 +679,34 @@ func (m *Manager) handleShardStream(s network.Stream) {
 	_, _ = io.CopyBuffer(s, f, buf)
 }
 
+func trimStreamLeadingNewline(r io.Reader) io.Reader {
+	b := make([]byte, 1)
+	n, err := r.Read(b)
+	if err != nil || n == 0 {
+		return r
+	}
+	if b[0] == '\r' {
+		b2 := make([]byte, 1)
+		n2, err2 := r.Read(b2)
+		if err2 == nil && n2 > 0 && b2[0] == '\n' {
+			return r
+		}
+		if n2 > 0 {
+			return io.MultiReader(bytes.NewReader(append(b[:n], b2[:n2]...)), r)
+		}
+		return io.MultiReader(bytes.NewReader(b[:n]), r)
+	}
+	if b[0] == '\n' {
+		return r
+	}
+	return io.MultiReader(bytes.NewReader(b[:n]), r)
+}
+
 func (m *Manager) handleUpdateStream(s network.Stream) {
 	defer s.Close()
 	var req UpdateWireReq
-	if err := json.NewDecoder(s).Decode(&req); err != nil {
+	dec := json.NewDecoder(s)
+	if err := dec.Decode(&req); err != nil {
 		_ = json.NewEncoder(s).Encode(UpdateWireResp{Success: false, Error: fmt.Sprintf("decode error: %v", err)})
 		return
 	}
@@ -708,7 +733,8 @@ func (m *Manager) handleUpdateStream(s network.Stream) {
 		return
 	}
 
-	_, err = io.CopyN(f, s, req.FileSize)
+	streamReader := trimStreamLeadingNewline(io.MultiReader(dec.Buffered(), s))
+	_, err = io.CopyN(f, streamReader, req.FileSize)
 	f.Close()
 	if err != nil {
 		_ = json.NewEncoder(s).Encode(UpdateWireResp{Success: false, Error: fmt.Sprintf("failed to read update stream: %v", err)})
@@ -789,7 +815,8 @@ func (m *Manager) GetModel(ctx context.Context, p peer.ID, modelID, modelVersion
 	}
 
 	var header FileWireHeader
-	if err := json.NewDecoder(s).Decode(&header); err != nil {
+	dec := json.NewDecoder(s)
+	if err := dec.Decode(&header); err != nil {
 		return "", fmt.Errorf("failed to decode file header: %w", err)
 	}
 
@@ -813,7 +840,8 @@ func (m *Manager) GetModel(ctx context.Context, p peer.ID, modelID, modelVersion
 	}
 	defer f.Close()
 
-	_, err = io.CopyN(f, s, header.FileSize)
+	streamReader := trimStreamLeadingNewline(io.MultiReader(dec.Buffered(), s))
+	_, err = io.CopyN(f, streamReader, header.FileSize)
 	if err != nil && err != io.EOF {
 		return "", fmt.Errorf("failed to download model bytes: %w", err)
 	}
@@ -840,7 +868,8 @@ func (m *Manager) GetShard(ctx context.Context, p peer.ID, modelID, modelVersion
 	}
 
 	var header FileWireHeader
-	if err := json.NewDecoder(s).Decode(&header); err != nil {
+	dec := json.NewDecoder(s)
+	if err := dec.Decode(&header); err != nil {
 		return "", fmt.Errorf("failed to decode file header: %w", err)
 	}
 
@@ -864,7 +893,8 @@ func (m *Manager) GetShard(ctx context.Context, p peer.ID, modelID, modelVersion
 	}
 	defer f.Close()
 
-	_, err = io.CopyN(f, s, header.FileSize)
+	streamReader := trimStreamLeadingNewline(io.MultiReader(dec.Buffered(), s))
+	_, err = io.CopyN(f, streamReader, header.FileSize)
 	if err != nil && err != io.EOF {
 		return "", fmt.Errorf("failed to download shard bytes: %w", err)
 	}

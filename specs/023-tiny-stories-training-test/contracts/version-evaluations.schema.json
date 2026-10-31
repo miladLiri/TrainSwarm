@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VersionEvaluationsReport",
+  "description": "Schema for reports/version_evaluations.json recording offline validation loss, accuracy, and perplexity",
+  "type": "object",
+  "required": [
+    "model_id",
+    "evaluated_at",
+    "eval_dataset_samples",
+    "versions"
+  ],
+  "properties": {
+    "model_id": { "type": "string" },
+    "evaluated_at": { "type": "string" },
+    "eval_dataset_samples": { "type": "integer", "minimum": 1 },
+    "versions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "version",
+          "is_baseline",
+          "loss",
+          "perplexity",
+          "top1_accuracy",
+          "archive_path"
+        ],
+        "properties": {
+          "version": { "type": "integer", "minimum": 0 },
+          "is_baseline": { "type": "boolean" },
+          "loss": { "type": "number", "minimum": 0.0 },
+          "perplexity": { "type": "number", "minimum": 1.0 },
+          "top1_accuracy": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+          "loss_delta_percent": { "type": "number" },
+          "perplexity_delta_percent": { "type": "number" },
+          "accuracy_delta_percent": { "type": "number" },
+          "archive_path": { "type": "string" }
+        }
+      }
+    }
+  }
+}

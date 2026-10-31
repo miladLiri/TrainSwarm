@@ -94,7 +94,7 @@ class ITrainerP2PNodeAdapter(ABC):
 class TrainerP2PNodeAdapter(ITrainerP2PNodeAdapter):
     """gRPC client implementation communicating with localhost Go p2p-node sidecar."""
 
-    def __init__(self, target: Optional[str] = None, timeout: float = 60.0) -> None:
+    def __init__(self, target: Optional[str] = None, timeout: float = 180.0) -> None:
         grpc_host = os.getenv("P2P_GRPC_HOST", "127.0.0.1")
         grpc_port = os.getenv("P2P_GRPC_PORT", os.getenv("GRPC_PORT", "50051"))
         self.target = target or f"{grpc_host}:{grpc_port}"

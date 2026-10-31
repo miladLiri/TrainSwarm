@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RoundTimingsReport",
+  "description": "Schema for reports/round_timings.json recording wall-clock spans per round",
+  "type": "object",
+  "required": [
+    "total_rounds",
+    "total_elapsed_seconds",
+    "rounds"
+  ],
+  "properties": {
+    "total_rounds": { "type": "integer", "minimum": 1 },
+    "total_elapsed_seconds": { "type": "number", "minimum": 0.0 },
+    "rounds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "round",
+          "base_model_version",
+          "produced_model_version",
+          "submitted_at",
+          "completed_at",
+          "elapsed_seconds",
+          "shards_completed"
+        ],
+        "properties": {
+          "round": { "type": "integer", "minimum": 1 },
+          "base_model_version": { "type": "integer", "minimum": 0 },
+          "produced_model_version": { "type": "integer", "minimum": 1 },
+          "submitted_at": { "type": "string", "format": "date-time" },
+          "completed_at": { "type": "string", "format": "date-time" },
+          "elapsed_seconds": { "type": "number", "minimum": 0.0 },
+          "phases": {
+            "type": "object",
+            "properties": {
+              "sharding_duration_seconds": { "type": "number" },
+              "training_duration_seconds": { "type": "number" },
+              "aggregation_duration_seconds": { "type": "number" }
+            }
+          },
+          "shards_completed": { "type": "integer", "minimum": 1 }
+        }
+      }
+    }
+  }
+}
