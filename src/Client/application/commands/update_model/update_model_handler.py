@@ -81,6 +81,19 @@ class UpdateModelCommandHandler:
             result = training_result
             update_path = saved_update_artifact_path or ""
 
+        if update_path and not Path(update_path).is_file():
+            fname = Path(update_path).name
+            if self.working_directory:
+                candidate = self.working_directory / fname
+                if candidate.is_file():
+                    update_path = str(candidate.resolve())
+            if not Path(update_path).is_file():
+                env_work = os.getenv("WORKING_DIR") or os.getenv("TRAINING_WORKING_DIRECTORY")
+                if env_work:
+                    candidate = Path(env_work) / fname
+                    if candidate.is_file():
+                        update_path = str(candidate.resolve())
+
         if result is None:
             raise ValueError("training_result is required for UpdateModelCommand")
 

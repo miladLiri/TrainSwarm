@@ -36,7 +36,13 @@ FINETUNING_DIR = SAMPLE_DIR / "fine-tuning-dataset"
 PIDS_FILE = SAMPLE_DIR / ".test_pids.json"
 
 TEST_PORTS = [4001, 8090, 8080, 8081, 50051, 50052, 50053, 9001, 9002, 9003]
-CONTAINER_NAMES = ["trainswarm-relay", "trainswarm-coordinator"]
+CONTAINER_NAMES = [
+    "trainswarm-relay",
+    "trainswarm-coordinator",
+    "trainswarm-p2p-client",
+    "trainswarm-p2p-trainer1",
+    "trainswarm-p2p-trainer2",
+]
 
 
 def kill_tracked_processes() -> None:
@@ -121,6 +127,11 @@ def stop_docker_containers() -> None:
             break
         except Exception:
             pass
+
+    try:
+        subprocess.run(["docker", "network", "rm", "trainswarm-net"], capture_output=True, check=False)
+    except Exception:
+        pass
 
 
 def purge_work_dir() -> None:

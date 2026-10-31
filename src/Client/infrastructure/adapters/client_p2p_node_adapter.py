@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 import json
 import logging
 import os
+from pathlib import Path
 import queue
 import threading
 import time
@@ -228,10 +229,19 @@ class ClientP2PNodeAdapter(IClientP2PNodeAdapter):
                 else:
                     result = TrainingResult(**result_dict)
                 
+                saved_path = req.saved_update_path
+                if saved_path and not Path(saved_path).is_file():
+                    fname = Path(saved_path).name
+                    env_work = os.getenv("WORKING_DIR") or os.getenv("TRAINING_WORKING_DIRECTORY")
+                    if env_work:
+                        candidate = Path(env_work) / fname
+                        if candidate.is_file():
+                            saved_path = str(candidate.resolve())
+
                 self.update_model_handler.handle(
                     trainer_node_id=req.trainer_peer_id,
                     training_result=result,
-                    saved_update_artifact_path=req.saved_update_path,
+                    saved_update_artifact_path=saved_path,
                 )
                 self._response_queue.put(ClientActionResponse(
                     request_id=req.request_id,

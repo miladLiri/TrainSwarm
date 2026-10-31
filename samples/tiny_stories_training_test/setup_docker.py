@@ -2,9 +2,9 @@
 setup_docker.py
 
 Docker hybrid cluster orchestration harness for TinyStories Multi-Round Distributed Training Test:
-1. Runs Bootstrap Relay and Coordinator inside Docker containers using direct `docker run` CLI commands.
-2. Runs P2P sidecars, Client daemon, and 2 Trainer daemons natively on the host.
-3. Automatically tracks all background PIDs in .test_pids.json for clean teardown.
+1. Runs Bootstrap Relay, Coordinator, and 3 P2P sidecars inside Docker containers.
+2. Runs Client daemon and 2 Trainer daemons natively on the host (connecting over mapped ports).
+3. Automatically tracks native background PIDs in .test_pids.json for clean teardown.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import socket
 import subprocess
 import sys
 import time
@@ -33,6 +34,7 @@ PIDS_FILE = SAMPLE_DIR / ".test_pids.json"
 
 RELAY_HTTP_URL = "http://127.0.0.1:8090/health"
 COORD_HTTP_URL = "http://127.0.0.1:8080/health"
+DOCKER_NETWORK = "trainswarm-net"
 
 
 def wait_for_http(url: str, name: str, container_name: str | None = None, max_seconds: int = 45) -> bool:
@@ -69,6 +71,38 @@ def wait_for_http(url: str, name: str, container_name: str | None = None, max_se
     return False
 
 
+def wait_for_tcp(port: int, name: str, container_name: str | None = None, max_seconds: int = 35) -> bool:
+    """Poll TCP socket until port responds or timeout, printing container logs on failure."""
+    print(f"[SetupDocker] Waiting for {name} listening on port {port}...", end="", flush=True)
+    start = time.time()
+    while time.time() - start < max_seconds:
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=1.0):
+                print(f" OK ({time.time() - start:.1f}s)")
+                return True
+        except (socket.timeout, ConnectionRefusedError, OSError):
+            pass
+        print(".", end="", flush=True)
+        time.sleep(1.0)
+    print(" FAILED")
+
+    if container_name:
+        try:
+            logs = subprocess.run(
+                ["docker", "logs", "--tail", "25", container_name],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if logs.stdout or logs.stderr:
+                print(f"\n[SetupDocker] --- Container logs for '{container_name}' ---")
+                print((logs.stdout or logs.stderr).strip())
+                print("[SetupDocker] -----------------------------------------------------\n")
+        except Exception:
+            pass
+    return False
+
+
 def is_docker_available() -> bool:
     """Verifies that docker is installed and the Docker daemon is responding."""
     sys.stdout.flush()
@@ -94,6 +128,23 @@ def is_docker_available() -> bool:
         return False
 
     return True
+
+
+def ensure_docker_network(net_name: str = DOCKER_NETWORK) -> bool:
+    """Creates a user-defined bridge network if it does not already exist."""
+    try:
+        inspect = subprocess.run(["docker", "network", "inspect", net_name], capture_output=True, check=False)
+        if inspect.returncode == 0:
+            return True
+        res = subprocess.run(["docker", "network", "create", net_name], capture_output=True, text=True, check=False)
+        if res.returncode == 0:
+            print(f"[SetupDocker] Created Docker network '{net_name}'.")
+            return True
+        print(f"[SetupDocker] [ERROR] Failed to create Docker network '{net_name}': {res.stderr}", file=sys.stderr)
+        return False
+    except Exception as exc:
+        print(f"[SetupDocker] [ERROR] Exception creating network '{net_name}': {exc}", file=sys.stderr)
+        return False
 
 
 def docker_image_exists(tag: str) -> bool:
@@ -135,7 +186,7 @@ def build_docker_image(tag: str, context_path: Path, dockerfile_path: Path | Non
 
 
 def start_docker_cluster(force_rebuild: bool = False) -> int:
-    """Runs Coordinator and Relay in Docker, sidecars/trainers natively."""
+    """Runs Coordinator, Relay, and 3 P2P sidecars in Docker; Client and Trainers natively."""
     if not is_docker_available():
         return 1
 
@@ -149,6 +200,13 @@ def start_docker_cluster(force_rebuild: bool = False) -> int:
     trainer1_work = WORK_DIR / "trainer1_artifacts"
     trainer2_work = WORK_DIR / "trainer2_artifacts"
 
+    for d in (db_dir, logs_dir, client_work, trainer1_work, trainer2_work):
+        d.mkdir(parents=True, exist_ok=True)
+
+    # 0. Ensure shared Docker bridge network
+    if not ensure_docker_network(DOCKER_NETWORK):
+        return 1
+
     # 1. Ensure Bootstrap Relay Docker image
     print("[SetupDocker] [1/8] Ensuring Bootstrap Relay Docker image 'trainswarm-relay'...")
     relay_context = SRC_DIR / "bootstrap-relay"
@@ -160,6 +218,8 @@ def start_docker_cluster(force_rebuild: bool = False) -> int:
     relay_cmd = [
         "docker", "run", "-d",
         "--name", "trainswarm-relay",
+        "--network", DOCKER_NETWORK,
+        "--add-host", "host.docker.internal:host-gateway",
         "-p", "4001:4001",
         "-p", "4001:4001/udp",
         "-p", "8090:8090",
@@ -189,6 +249,8 @@ def start_docker_cluster(force_rebuild: bool = False) -> int:
     coord_cmd = [
         "docker", "run", "-d",
         "--name", "trainswarm-coordinator",
+        "--network", DOCKER_NETWORK,
+        "--add-host", "host.docker.internal:host-gateway",
         "-p", "8080:8080",
         "-p", "8081:8081",
         "-e", "ASPNETCORE_URLS=http://+:8080",
@@ -205,90 +267,104 @@ def start_docker_cluster(force_rebuild: bool = False) -> int:
     if not wait_for_http(COORD_HTTP_URL, "Coordinator Container", container_name="trainswarm-coordinator", max_seconds=45):
         return 1
 
+    # Ensure P2P Node Docker image for sidecars
+    print("[SetupDocker] Ensuring P2P Node Docker image 'trainswarm-p2p'...")
+    p2p_context = SRC_DIR / "p2p-node"
+    p2p_dockerfile = p2p_context / "Dockerfile"
+    if not build_docker_image("trainswarm-p2p", p2p_context, p2p_dockerfile, force_rebuild=force_rebuild):
+        return 1
+
+    # 3. Start Client p2p-node container (gRPC 50051, P2P 9001)
+    print("[SetupDocker] [3/8] Starting Client p2p-node container (gRPC 50051, P2P 9001)...")
+    client_vol = str(client_work.resolve()).replace("\\", "/")
+    cp2p_cmd = [
+        "docker", "run", "-d",
+        "--name", "trainswarm-p2p-client",
+        "--network", DOCKER_NETWORK,
+        "--add-host", "host.docker.internal:host-gateway",
+        "-p", "50051:50051",
+        "-p", "9001:9001",
+        "-p", "9001:9001/udp",
+        "-v", f"{client_vol}:/data",
+        "-e", "RELAY_HOST=trainswarm-relay",
+        "-e", "RELAY_PORT=4001",
+        "-e", "RELAY_HTTP_PORT=8090",
+        "-e", "P2P_PORT=9001",
+        "-e", "GRPC_PORT=50051",
+        "-e", "WORKING_DIR=/data",
+        "-e", "IDENTITY_PATH=/data/client.key",
+        "trainswarm-p2p",
+    ]
+    cp2p_run = subprocess.run(cp2p_cmd, capture_output=True, text=True, check=False)
+    if cp2p_run.returncode != 0:
+        print(f"[SetupDocker] [ERROR] Failed to start client p2p container: {cp2p_run.stderr}", file=sys.stderr)
+        return 1
+
+    if not wait_for_tcp(50051, "Client p2p-node Container", container_name="trainswarm-p2p-client", max_seconds=35):
+        return 1
+
+    # 4. Start Trainer 1 p2p-node container (gRPC 50052, P2P 9002)
+    print("[SetupDocker] [4/8] Starting Trainer 1 p2p-node container (gRPC 50052, P2P 9002)...")
+    trainer1_vol = str(trainer1_work.resolve()).replace("\\", "/")
+    t1p2p_cmd = [
+        "docker", "run", "-d",
+        "--name", "trainswarm-p2p-trainer1",
+        "--network", DOCKER_NETWORK,
+        "--add-host", "host.docker.internal:host-gateway",
+        "-p", "50052:50052",
+        "-p", "9002:9002",
+        "-p", "9002:9002/udp",
+        "-v", f"{trainer1_vol}:/data",
+        "-e", "RELAY_HOST=trainswarm-relay",
+        "-e", "RELAY_PORT=4001",
+        "-e", "RELAY_HTTP_PORT=8090",
+        "-e", "P2P_PORT=9002",
+        "-e", "GRPC_PORT=50052",
+        "-e", "WORKING_DIR=/data",
+        "-e", "IDENTITY_PATH=/data/trainer1.key",
+        "trainswarm-p2p",
+    ]
+    t1p2p_run = subprocess.run(t1p2p_cmd, capture_output=True, text=True, check=False)
+    if t1p2p_run.returncode != 0:
+        print(f"[SetupDocker] [ERROR] Failed to start trainer1 p2p container: {t1p2p_run.stderr}", file=sys.stderr)
+        return 1
+
+    if not wait_for_tcp(50052, "Trainer 1 p2p-node Container", container_name="trainswarm-p2p-trainer1", max_seconds=35):
+        return 1
+
+    # 5. Start Trainer 2 p2p-node container (gRPC 50053, P2P 9003)
+    print("[SetupDocker] [5/8] Starting Trainer 2 p2p-node container (gRPC 50053, P2P 9003)...")
+    trainer2_vol = str(trainer2_work.resolve()).replace("\\", "/")
+    t2p2p_cmd = [
+        "docker", "run", "-d",
+        "--name", "trainswarm-p2p-trainer2",
+        "--network", DOCKER_NETWORK,
+        "--add-host", "host.docker.internal:host-gateway",
+        "-p", "50053:50053",
+        "-p", "9003:9003",
+        "-p", "9003:9003/udp",
+        "-v", f"{trainer2_vol}:/data",
+        "-e", "RELAY_HOST=trainswarm-relay",
+        "-e", "RELAY_PORT=4001",
+        "-e", "RELAY_HTTP_PORT=8090",
+        "-e", "P2P_PORT=9003",
+        "-e", "GRPC_PORT=50053",
+        "-e", "WORKING_DIR=/data",
+        "-e", "IDENTITY_PATH=/data/trainer2.key",
+        "trainswarm-p2p",
+    ]
+    t2p2p_run = subprocess.run(t2p2p_cmd, capture_output=True, text=True, check=False)
+    if t2p2p_run.returncode != 0:
+        print(f"[SetupDocker] [ERROR] Failed to start trainer2 p2p container: {t2p2p_run.stderr}", file=sys.stderr)
+        return 1
+
+    if not wait_for_tcp(50053, "Trainer 2 p2p-node Container", container_name="trainswarm-p2p-trainer2", max_seconds=35):
+        return 1
+
     creation_flags = (subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS) if sys.platform == "win32" else 0
     pids: list[int] = []
 
-    p2pd_bin = SRC_DIR / "p2p-node" / "bin" / "p2pd.exe"
-    p2pd_base_cmd = [str(p2pd_bin)] if p2pd_bin.exists() else ["go", "run", "./cmd/p2pd"]
-
-    # 3. Start Client p2p-node (gRPC 50051, P2P 9001)
-    print("[SetupDocker] [3/8] Starting Client p2p-node (gRPC 50051)...")
-    cp2p_log = open(logs_dir / "client_p2p.log", "w", encoding="utf-8")
-    cp2p_env = os.environ.copy()
-    cp2p_env.update({
-        "RELAY_HOST": "127.0.0.1",
-        "RELAY_PORT": "4001",
-        "RELAY_HTTP_PORT": "8090",
-        "P2P_PORT": "9001",
-        "GRPC_PORT": "50051",
-        "WORKING_DIR": str(client_work.resolve()),
-        "IDENTITY_PATH": str((WORK_DIR / "client.key").resolve()),
-    })
-    cp2p_proc = subprocess.Popen(
-        p2pd_base_cmd,
-        cwd=str(SRC_DIR / "p2p-node"),
-        env=cp2p_env,
-        stdout=cp2p_log,
-        stderr=subprocess.STDOUT,
-        stdin=subprocess.DEVNULL,
-        creationflags=creation_flags,
-    )
-    pids.append(cp2p_proc.pid)
-    cp2p_log.close()
-
-    # 4. Start Trainer 1 p2p-node (gRPC 50052, P2P 9002)
-    print("[SetupDocker] [4/8] Starting Trainer 1 p2p-node (gRPC 50052)...")
-    t1p2p_log = open(logs_dir / "trainer1_p2p.log", "w", encoding="utf-8")
-    t1p2p_env = os.environ.copy()
-    t1p2p_env.update({
-        "RELAY_HOST": "127.0.0.1",
-        "RELAY_PORT": "4001",
-        "RELAY_HTTP_PORT": "8090",
-        "P2P_PORT": "9002",
-        "GRPC_PORT": "50052",
-        "WORKING_DIR": str(trainer1_work.resolve()),
-        "IDENTITY_PATH": str((WORK_DIR / "trainer1.key").resolve()),
-    })
-    t1p2p_proc = subprocess.Popen(
-        p2pd_base_cmd,
-        cwd=str(SRC_DIR / "p2p-node"),
-        env=t1p2p_env,
-        stdout=t1p2p_log,
-        stderr=subprocess.STDOUT,
-        stdin=subprocess.DEVNULL,
-        creationflags=creation_flags,
-    )
-    pids.append(t1p2p_proc.pid)
-    t1p2p_log.close()
-
-    # 5. Start Trainer 2 p2p-node (gRPC 50053, P2P 9003)
-    print("[SetupDocker] [5/8] Starting Trainer 2 p2p-node (gRPC 50053)...")
-    t2p2p_log = open(logs_dir / "trainer2_p2p.log", "w", encoding="utf-8")
-    t2p2p_env = os.environ.copy()
-    t2p2p_env.update({
-        "RELAY_HOST": "127.0.0.1",
-        "RELAY_PORT": "4001",
-        "RELAY_HTTP_PORT": "8090",
-        "P2P_PORT": "9003",
-        "GRPC_PORT": "50053",
-        "WORKING_DIR": str(trainer2_work.resolve()),
-        "IDENTITY_PATH": str((WORK_DIR / "trainer2.key").resolve()),
-    })
-    t2p2p_proc = subprocess.Popen(
-        p2pd_base_cmd,
-        cwd=str(SRC_DIR / "p2p-node"),
-        env=t2p2p_env,
-        stdout=t2p2p_log,
-        stderr=subprocess.STDOUT,
-        stdin=subprocess.DEVNULL,
-        creationflags=creation_flags,
-    )
-    pids.append(t2p2p_proc.pid)
-    t2p2p_log.close()
-
-    time.sleep(3.5)
-
-    # 6. Start Client daemon
+    # 6. Start Client daemon natively on host
     print("[SetupDocker] [6/8] Starting Client daemon...")
     client_log = open(logs_dir / "client.log", "w", encoding="utf-8")
     client_env = os.environ.copy()
@@ -315,7 +391,7 @@ def start_docker_cluster(force_rebuild: bool = False) -> int:
     pids.append(client_proc.pid)
     client_log.close()
 
-    # 7. Start Trainer 1 (trainer-node-01)
+    # 7. Start Trainer 1 (trainer-node-01) natively on host
     print("[SetupDocker] [7/8] Starting Trainer 1 (trainer-node-01)...")
     t1_log = open(logs_dir / "trainer1.log", "w", encoding="utf-8")
     t1_env = os.environ.copy()
@@ -342,7 +418,7 @@ def start_docker_cluster(force_rebuild: bool = False) -> int:
     pids.append(t1_proc.pid)
     t1_log.close()
 
-    # 8. Start Trainer 2 (trainer-node-02)
+    # 8. Start Trainer 2 (trainer-node-02) natively on host
     print("[SetupDocker] [8/8] Starting Trainer 2 (trainer-node-02)...")
     t2_log = open(logs_dir / "trainer2.log", "w", encoding="utf-8")
     t2_env = os.environ.copy()
@@ -371,13 +447,14 @@ def start_docker_cluster(force_rebuild: bool = False) -> int:
 
     time.sleep(3.0)
 
-    # Persist PIDs for teardown
+    # Persist native Python PIDs for teardown
     with open(PIDS_FILE, "w", encoding="utf-8") as f:
         json.dump(pids, f, indent=2)
 
     print("\n" + "=" * 65)
     print(f"[+] Docker Hybrid Cluster spawned successfully!")
-    print(f"[+] Native sidecar/trainer PIDs recorded in: {PIDS_FILE.name}")
+    print(f"[+] 5 Docker Containers: trainswarm-relay, trainswarm-coordinator, trainswarm-p2p-client, trainswarm-p2p-trainer1, trainswarm-p2p-trainer2")
+    print(f"[+] Native Client/Trainer PIDs recorded in: {PIDS_FILE.name}")
     print("=" * 65 + "\n")
     return 0
 

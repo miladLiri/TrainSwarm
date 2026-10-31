@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 import json
 import logging
 import os
+from pathlib import Path
 from typing import Optional
 
 import grpc
@@ -173,7 +174,15 @@ class TrainerP2PNodeAdapter(ITrainerP2PNodeAdapter):
             resp = stub.GetModel(req, timeout=self.timeout)
             if not resp.success:
                 raise P2PTransferError(f"Failed to get model from {client_node_id}: {resp.error}")
-            return resp.local_file_path
+            local_path = resp.local_file_path
+            if not Path(local_path).is_file():
+                fname = Path(local_path).name
+                env_work = os.getenv("TRAINER_WORKING_DIRECTORY") or os.getenv("WORKING_DIR")
+                if env_work:
+                    candidate = Path(env_work) / fname
+                    if candidate.is_file():
+                        return str(candidate.resolve())
+            return local_path
         except grpc.RpcError as e:
             raise P2PTransferError(f"gRPC error fetching model: {e}") from e
         except Exception as e:
@@ -201,7 +210,15 @@ class TrainerP2PNodeAdapter(ITrainerP2PNodeAdapter):
             resp = stub.GetShard(req, timeout=self.timeout)
             if not resp.success:
                 raise P2PTransferError(f"Failed to get shard from {client_node_id}: {resp.error}")
-            return resp.local_file_path
+            local_path = resp.local_file_path
+            if not Path(local_path).is_file():
+                fname = Path(local_path).name
+                env_work = os.getenv("TRAINER_WORKING_DIRECTORY") or os.getenv("WORKING_DIR")
+                if env_work:
+                    candidate = Path(env_work) / fname
+                    if candidate.is_file():
+                        return str(candidate.resolve())
+            return local_path
         except grpc.RpcError as e:
             raise P2PTransferError(f"gRPC error fetching shard: {e}") from e
         except Exception as e:

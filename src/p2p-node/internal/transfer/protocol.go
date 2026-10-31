@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -162,6 +163,35 @@ func (m *Manager) ensurePeerAddr(pid peer.ID) {
 			}
 		}
 	}
+}
+
+func (m *Manager) openLocalFile(path string) (*os.File, error) {
+	if f, err := os.Open(path); err == nil {
+		return f, nil
+	}
+	cleanPath := filepath.ToSlash(path)
+	baseName := path
+	if idx := strings.LastIndex(cleanPath, "/"); idx != -1 {
+		baseName = cleanPath[idx+1:]
+	}
+	altPath := filepath.Join(m.workingDir, baseName)
+	if fAlt, errAlt := os.Open(altPath); errAlt == nil {
+		return fAlt, nil
+	}
+	var foundPath string
+	_ = filepath.Walk(m.workingDir, func(p string, info os.FileInfo, err error) error {
+		if err == nil && !info.IsDir() && info.Name() == baseName {
+			foundPath = p
+			return filepath.SkipAll
+		}
+		return nil
+	})
+	if foundPath != "" {
+		if fFound, errFound := os.Open(foundPath); errFound == nil {
+			return fFound, nil
+		}
+	}
+	return nil, fmt.Errorf("failed to open file %s (searched workingDir %s): file not found", path, m.workingDir)
 }
 
 func (m *Manager) handleIncomingStream(s network.Stream) {
@@ -371,7 +401,7 @@ func (m *Manager) GetTransferStatus(transferID string) (*p2pv1.TransferStatusRes
 func (m *Manager) SendFile(ctx context.Context, p peer.ID, transferID, sourcePath, fileName string, fileSize int64, sha256 string, progress chan *p2pv1.TransferEvent) error {
 	defer close(progress)
 
-	f, err := os.Open(sourcePath)
+	f, err := m.openLocalFile(sourcePath)
 	if err != nil {
 		progress <- &p2pv1.TransferEvent{TransferId: transferID, State: p2pv1.EventType_EVENT_TRANSFER_FAILED, Error: err.Error()}
 		return fmt.Errorf("failed to open source file: %w", err)
@@ -588,7 +618,7 @@ func (m *Manager) handleModelStream(s network.Stream) {
 		return
 	}
 
-	f, err := os.Open(resp.FilePath)
+	f, err := m.openLocalFile(resp.FilePath)
 	if err != nil {
 		_ = json.NewEncoder(s).Encode(FileWireHeader{Success: false, Error: fmt.Sprintf("failed to open model file: %v", err)})
 		return
@@ -652,7 +682,7 @@ func (m *Manager) handleShardStream(s network.Stream) {
 		return
 	}
 
-	f, err := os.Open(resp.FilePath)
+	f, err := m.openLocalFile(resp.FilePath)
 	if err != nil {
 		_ = json.NewEncoder(s).Encode(FileWireHeader{Success: false, Error: fmt.Sprintf("failed to open shard file: %v", err)})
 		return
@@ -905,7 +935,7 @@ func (m *Manager) GetShard(ctx context.Context, p peer.ID, modelID, modelVersion
 func (m *Manager) SendUpdate(ctx context.Context, p peer.ID, trainingResultJSON, updateArtifactPath string) error {
 	m.ensurePeerAddr(p)
 
-	f, err := os.Open(updateArtifactPath)
+	f, err := m.openLocalFile(updateArtifactPath)
 	if err != nil {
 		return fmt.Errorf("failed to open update artifact: %w", err)
 	}
