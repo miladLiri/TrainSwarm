@@ -35,8 +35,8 @@ RELAY_HTTP_URL = "http://127.0.0.1:8090/health"
 COORD_HTTP_URL = "http://127.0.0.1:8080/health"
 
 
-def wait_for_http(url: str, name: str, max_seconds: int = 45) -> bool:
-    """Poll HTTP health endpoint until healthy or timeout."""
+def wait_for_http(url: str, name: str, container_name: str | None = None, max_seconds: int = 45) -> bool:
+    """Poll HTTP health endpoint until healthy or timeout, printing container logs on failure."""
     print(f"[SetupDocker] Waiting for {name} health at {url}...", end="", flush=True)
     start = time.time()
     while time.time() - start < max_seconds:
@@ -51,11 +51,94 @@ def wait_for_http(url: str, name: str, max_seconds: int = 45) -> bool:
         print(".", end="", flush=True)
         time.sleep(1.0)
     print(" FAILED")
+
+    if container_name:
+        try:
+            logs = subprocess.run(
+                ["docker", "logs", "--tail", "25", container_name],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if logs.stdout or logs.stderr:
+                print(f"\n[SetupDocker] --- Recent container logs for '{container_name}' ---")
+                print((logs.stdout or logs.stderr).strip())
+                print("[SetupDocker] -----------------------------------------------------\n")
+        except Exception:
+            pass
     return False
 
 
-def start_docker_cluster() -> int:
+def is_docker_available() -> bool:
+    """Verifies that docker is installed and the Docker daemon is responding."""
+    sys.stdout.flush()
+    try:
+        ver = subprocess.run(["docker", "--version"], capture_output=True, text=True, check=False)
+        if ver.returncode != 0:
+            print("[SetupDocker] [ERROR] 'docker' command failed. Is Docker installed?", file=sys.stderr, flush=True)
+            return False
+    except FileNotFoundError:
+        print("[SetupDocker] [ERROR] 'docker' executable not found in PATH.", file=sys.stderr, flush=True)
+        return False
+
+    try:
+        info = subprocess.run(["docker", "info"], capture_output=True, text=True, timeout=10, check=False)
+        if info.returncode != 0:
+            print("[SetupDocker] [ERROR] Docker daemon is not responding. Please start Docker Desktop/daemon.", file=sys.stderr, flush=True)
+            return False
+    except subprocess.TimeoutExpired:
+        print("[SetupDocker] [ERROR] 'docker info' timed out after 10s. Docker daemon appears frozen.", file=sys.stderr, flush=True)
+        return False
+    except Exception as exc:
+        print(f"[SetupDocker] [ERROR] Unexpected error connecting to Docker: {exc}", file=sys.stderr, flush=True)
+        return False
+
+    return True
+
+
+def docker_image_exists(tag: str) -> bool:
+    """Checks whether a Docker image already exists locally."""
+    try:
+        res = subprocess.run(
+            ["docker", "image", "inspect", tag],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return res.returncode == 0
+    except Exception:
+        return False
+
+
+def build_docker_image(tag: str, context_path: Path, dockerfile_path: Path | None = None, force_rebuild: bool = False) -> bool:
+    """Builds a Docker image with live console output if not present or rebuild requested."""
+    if not force_rebuild and docker_image_exists(tag):
+        print(f"[SetupDocker] Docker image '{tag}' already exists locally. Skipping build.")
+        return True
+
+    cmd = ["docker", "build", "-t", tag]
+    if dockerfile_path:
+        cmd.extend(["-f", str(dockerfile_path.resolve())])
+    cmd.append(str(context_path.resolve()))
+
+    print(f"[SetupDocker] Building Docker image '{tag}' (this may take a couple minutes on initial build)...")
+    try:
+        res = subprocess.run(cmd, check=False)
+        if res.returncode != 0:
+            print(f"[SetupDocker] [ERROR] 'docker build -t {tag}' failed with exit code {res.returncode}.", file=sys.stderr)
+            return False
+        print(f"[SetupDocker] Successfully built image '{tag}'.")
+        return True
+    except Exception as exc:
+        print(f"[SetupDocker] [ERROR] Failed to run docker build: {exc}", file=sys.stderr)
+        return False
+
+
+def start_docker_cluster(force_rebuild: bool = False) -> int:
     """Runs Coordinator and Relay in Docker, sidecars/trainers natively."""
+    if not is_docker_available():
+        return 1
+
     import clean
     clean.init_runtime_dirs(clean_work=True, clean_reports=False)
     clean.stop_docker_containers()
@@ -66,81 +149,60 @@ def start_docker_cluster() -> int:
     trainer1_work = WORK_DIR / "trainer1_artifacts"
     trainer2_work = WORK_DIR / "trainer2_artifacts"
 
-    # Verify Docker CLI is accessible
-    try:
-        ver = subprocess.run(["docker", "--version"], capture_output=True, text=True, check=False)
-        if ver.returncode != 0:
-            print("[SetupDocker] [ERROR] Docker command failed. Is Docker running?", file=sys.stderr)
-            return 1
-    except FileNotFoundError:
-        print("[SetupDocker] [ERROR] 'docker' executable not found in PATH.", file=sys.stderr)
+    # 1. Ensure Bootstrap Relay Docker image
+    print("[SetupDocker] [1/8] Ensuring Bootstrap Relay Docker image 'trainswarm-relay'...")
+    relay_context = SRC_DIR / "bootstrap-relay"
+    relay_dockerfile = relay_context / "Dockerfile"
+    if not build_docker_image("trainswarm-relay", relay_context, relay_dockerfile, force_rebuild=force_rebuild):
         return 1
 
-    # 1. Build or ensure Bootstrap Relay image
-    print("[SetupDocker] [1/8] Ensuring Bootstrap Relay Docker image 'trainswarm-relay'...")
-    relay_build = subprocess.run(
-        ["docker", "build", "-t", "trainswarm-relay", str(SRC_DIR / "bootstrap-relay")],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if relay_build.returncode != 0:
-        print(f"[SetupDocker] [WARN] Relay build error: {relay_build.stderr[:200]}...")
-
     print("[SetupDocker] Launching Bootstrap Relay container (ports 4001, 8090)...")
-    relay_run = subprocess.run(
-        [
-            "docker", "run", "-d",
-            "--name", "trainswarm-relay",
-            "-p", "4001:4001",
-            "-p", "8090:8090",
-            "trainswarm-relay"
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    relay_cmd = [
+        "docker", "run", "-d",
+        "--name", "trainswarm-relay",
+        "-p", "4001:4001",
+        "-p", "4001:4001/udp",
+        "-p", "8090:8090",
+        "-e", "P2P_RELAY_LISTEN_TCP=/ip4/0.0.0.0/tcp/4001",
+        "-e", "P2P_RELAY_LISTEN_QUIC=/ip4/0.0.0.0/udp/4001/quic-v1",
+        "-e", "P2P_RELAY_LISTEN_HTTP=8090",
+        "-e", "P2P_RELAY_IDENTITY_PATH=/data/relay.key",
+        "-e", "P2P_RELAY_LOG_LEVEL=info",
+        "trainswarm-relay",
+    ]
+    relay_run = subprocess.run(relay_cmd, capture_output=True, text=True, check=False)
     if relay_run.returncode != 0:
         print(f"[SetupDocker] [ERROR] Failed to start relay container: {relay_run.stderr}", file=sys.stderr)
         return 1
 
-    if not wait_for_http(RELAY_HTTP_URL, "Bootstrap Relay Container", 35):
+    if not wait_for_http(RELAY_HTTP_URL, "Bootstrap Relay Container", container_name="trainswarm-relay", max_seconds=35):
         return 1
 
-    # 2. Build or ensure Coordinator image
+    # 2. Ensure Coordinator Docker image
     print("[SetupDocker] [2/8] Ensuring Coordinator Docker image 'trainswarm-coordinator'...")
-    coord_build = subprocess.run(
-        [
-            "docker", "build",
-            "-t", "trainswarm-coordinator",
-            "-f", str(SRC_DIR / "Coordinator" / "TrainSwarm.Coordinator.Api" / "Dockerfile"),
-            str(SRC_DIR / "Coordinator")
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if coord_build.returncode != 0:
-        print(f"[SetupDocker] [WARN] Coordinator build error: {coord_build.stderr[:200]}...")
+    coord_context = SRC_DIR / "Coordinator"
+    coord_dockerfile = coord_context / "TrainSwarm.Coordinator.Api" / "Dockerfile"
+    if not build_docker_image("trainswarm-coordinator", coord_context, coord_dockerfile, force_rebuild=force_rebuild):
+        return 1
 
     print("[SetupDocker] Launching Coordinator container (ports 8080, 8081)...")
-    coord_run = subprocess.run(
-        [
-            "docker", "run", "-d",
-            "--name", "trainswarm-coordinator",
-            "-p", "8080:8080",
-            "-p", "8081:8081",
-            "trainswarm-coordinator"
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    coord_cmd = [
+        "docker", "run", "-d",
+        "--name", "trainswarm-coordinator",
+        "-p", "8080:8080",
+        "-p", "8081:8081",
+        "-e", "ASPNETCORE_URLS=http://+:8080",
+        "-e", "COORDINATOR_HTTP_PORT=8080",
+        "-e", "COORDINATOR_GRPC_PORT=8081",
+        "-e", "COORDINATOR_DB_CONNECTION_STRING=Data Source=/data/coordinator.db",
+        "trainswarm-coordinator",
+    ]
+    coord_run = subprocess.run(coord_cmd, capture_output=True, text=True, check=False)
     if coord_run.returncode != 0:
         print(f"[SetupDocker] [ERROR] Failed to start coordinator container: {coord_run.stderr}", file=sys.stderr)
         return 1
 
-    if not wait_for_http(COORD_HTTP_URL, "Coordinator Container", 45):
+    if not wait_for_http(COORD_HTTP_URL, "Coordinator Container", container_name="trainswarm-coordinator", max_seconds=45):
         return 1
 
     creation_flags = (subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS) if sys.platform == "win32" else 0
@@ -321,10 +383,19 @@ def start_docker_cluster() -> int:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Docker Hybrid Cluster Bootstrap for TinyStories Test.")
+    parser.add_argument("--rebuild", action="store_true", help="Force rebuilding Docker images even if they exist locally.")
+    parser.add_argument("--clean", action="store_true", help="Tear down running containers and processes.")
+    args = parser.parse_args()
+
+    if args.clean:
+        import clean
+        return clean.main()
+
     print("=" * 65)
     print(" TinyStories Test: Docker Hybrid Cluster Bootstrap ")
     print("=" * 65)
-    return start_docker_cluster()
+    return start_docker_cluster(force_rebuild=args.rebuild)
 
 
 if __name__ == "__main__":

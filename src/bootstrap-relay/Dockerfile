@@ -1,4 +1,4 @@
-FROM golang:1.26-alpine AS builder
+FROM golang:alpine AS builder
 
 WORKDIR /app
 COPY go.mod go.sum ./
@@ -15,5 +15,15 @@ COPY --from=builder /bootstrap-relay /usr/local/bin/bootstrap-relay
 EXPOSE 4001/tcp
 EXPOSE 4001/udp
 EXPOSE 8090/tcp
+
+# Runtime environment defaults for containerized relay
+ENV P2P_RELAY_LISTEN_TCP="/ip4/0.0.0.0/tcp/4001"
+ENV P2P_RELAY_LISTEN_QUIC="/ip4/0.0.0.0/udp/4001/quic-v1"
+ENV P2P_RELAY_LISTEN_HTTP="8090"
+ENV P2P_RELAY_IDENTITY_PATH="/data/relay.key"
+ENV P2P_RELAY_LOG_LEVEL="info"
+
+RUN mkdir -p /data
+VOLUME ["/data"]
 
 ENTRYPOINT ["bootstrap-relay"]
