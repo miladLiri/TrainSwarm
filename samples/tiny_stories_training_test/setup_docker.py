@@ -147,32 +147,54 @@ def ensure_docker_network(net_name: str = DOCKER_NETWORK) -> bool:
         return False
 
 
-def docker_image_exists(tag: str) -> bool:
-    """Checks whether a Docker image already exists locally."""
+def get_docker_mount_args(host_dir: Path, target_dir: str = "/data") -> list[str]:
+    """Returns mount arguments for Docker CLI, handling Windows paths reliably."""
+    posix_path = host_dir.resolve().as_posix()
+    return ["--mount", f"type=bind,source={posix_path},target={target_dir}"]
+
+
+def verify_container_mount(container_name: str, host_dir: Path, target_dir: str = "/data") -> bool:
+    """Verifies that the container's volume mount is reading and writing to the host directory."""
+    canary_name = f".mount_test_{int(time.time())}"
+    canary_host = host_dir / canary_name
     try:
+        canary_host.write_text("trainswarm_mount_verified", encoding="utf-8")
         res = subprocess.run(
-            ["docker", "image", "inspect", tag],
+            ["docker", "exec", container_name, "cat", f"{target_dir}/{canary_name}"],
             capture_output=True,
             text=True,
             check=False,
+            timeout=5,
         )
-        return res.returncode == 0
-    except Exception:
+        canary_host.unlink(missing_ok=True)
+        if res.returncode == 0 and "trainswarm_mount_verified" in res.stdout:
+            print(f"[SetupDocker] Bind mount verified for '{container_name}' -> {host_dir.name}")
+            return True
+
+        print(f"\n[SetupDocker] [WARNING] Bind mount check failed for '{container_name}'.", file=sys.stderr)
+        print(f"[SetupDocker] [WARNING] Container cannot access host directory: {host_dir}", file=sys.stderr)
+        if sys.platform == "win32" and host_dir.drive and host_dir.drive.upper() != "C:":
+            print(f"[SetupDocker] [IMPORTANT] Your workspace is on Drive {host_dir.drive}.", file=sys.stderr)
+            print(f"[SetupDocker] [IMPORTANT] In Docker Desktop, go to Settings -> Resources -> File Sharing", file=sys.stderr)
+            print(f"[SetupDocker] [IMPORTANT] and make sure Drive {host_dir.drive} is added/enabled so Docker can access it.", file=sys.stderr)
+        return False
+    except Exception as exc:
+        canary_host.unlink(missing_ok=True)
+        print(f"[SetupDocker] [WARNING] Error checking mount for '{container_name}': {exc}", file=sys.stderr)
         return False
 
 
 def build_docker_image(tag: str, context_path: Path, dockerfile_path: Path | None = None, force_rebuild: bool = False) -> bool:
-    """Builds a Docker image with live console output if not present or rebuild requested."""
-    if not force_rebuild and docker_image_exists(tag):
-        print(f"[SetupDocker] Docker image '{tag}' already exists locally. Skipping build.")
-        return True
-
-    cmd = ["docker", "build", "-t", tag]
+    """Builds a Docker image with live console output utilizing Docker layer cache."""
+    cmd = ["docker", "build"]
+    if force_rebuild:
+        cmd.append("--no-cache")
+    cmd.extend(["-t", tag])
     if dockerfile_path:
         cmd.extend(["-f", str(dockerfile_path.resolve())])
     cmd.append(str(context_path.resolve()))
 
-    print(f"[SetupDocker] Building Docker image '{tag}' (this may take a couple minutes on initial build)...")
+    print(f"[SetupDocker] Building Docker image '{tag}'...")
     try:
         res = subprocess.run(cmd, check=False)
         if res.returncode != 0:
@@ -276,7 +298,6 @@ def start_docker_cluster(force_rebuild: bool = False) -> int:
 
     # 3. Start Client p2p-node container (gRPC 50051, P2P 9001)
     print("[SetupDocker] [3/8] Starting Client p2p-node container (gRPC 50051, P2P 9001)...")
-    client_vol = str(client_work.resolve()).replace("\\", "/")
     cp2p_cmd = [
         "docker", "run", "-d",
         "--name", "trainswarm-p2p-client",
@@ -285,7 +306,9 @@ def start_docker_cluster(force_rebuild: bool = False) -> int:
         "-p", "50051:50051",
         "-p", "9001:9001",
         "-p", "9001:9001/udp",
-        "-v", f"{client_vol}:/data",
+    ]
+    cp2p_cmd.extend(get_docker_mount_args(client_work, "/data"))
+    cp2p_cmd.extend([
         "-e", "RELAY_HOST=trainswarm-relay",
         "-e", "RELAY_PORT=4001",
         "-e", "RELAY_HTTP_PORT=8090",
@@ -294,7 +317,7 @@ def start_docker_cluster(force_rebuild: bool = False) -> int:
         "-e", "WORKING_DIR=/data",
         "-e", "IDENTITY_PATH=/data/client.key",
         "trainswarm-p2p",
-    ]
+    ])
     cp2p_run = subprocess.run(cp2p_cmd, capture_output=True, text=True, check=False)
     if cp2p_run.returncode != 0:
         print(f"[SetupDocker] [ERROR] Failed to start client p2p container: {cp2p_run.stderr}", file=sys.stderr)
@@ -302,10 +325,10 @@ def start_docker_cluster(force_rebuild: bool = False) -> int:
 
     if not wait_for_tcp(50051, "Client p2p-node Container", container_name="trainswarm-p2p-client", max_seconds=35):
         return 1
+    verify_container_mount("trainswarm-p2p-client", client_work)
 
     # 4. Start Trainer 1 p2p-node container (gRPC 50052, P2P 9002)
     print("[SetupDocker] [4/8] Starting Trainer 1 p2p-node container (gRPC 50052, P2P 9002)...")
-    trainer1_vol = str(trainer1_work.resolve()).replace("\\", "/")
     t1p2p_cmd = [
         "docker", "run", "-d",
         "--name", "trainswarm-p2p-trainer1",
@@ -314,7 +337,9 @@ def start_docker_cluster(force_rebuild: bool = False) -> int:
         "-p", "50052:50052",
         "-p", "9002:9002",
         "-p", "9002:9002/udp",
-        "-v", f"{trainer1_vol}:/data",
+    ]
+    t1p2p_cmd.extend(get_docker_mount_args(trainer1_work, "/data"))
+    t1p2p_cmd.extend([
         "-e", "RELAY_HOST=trainswarm-relay",
         "-e", "RELAY_PORT=4001",
         "-e", "RELAY_HTTP_PORT=8090",
@@ -323,7 +348,7 @@ def start_docker_cluster(force_rebuild: bool = False) -> int:
         "-e", "WORKING_DIR=/data",
         "-e", "IDENTITY_PATH=/data/trainer1.key",
         "trainswarm-p2p",
-    ]
+    ])
     t1p2p_run = subprocess.run(t1p2p_cmd, capture_output=True, text=True, check=False)
     if t1p2p_run.returncode != 0:
         print(f"[SetupDocker] [ERROR] Failed to start trainer1 p2p container: {t1p2p_run.stderr}", file=sys.stderr)
@@ -331,10 +356,10 @@ def start_docker_cluster(force_rebuild: bool = False) -> int:
 
     if not wait_for_tcp(50052, "Trainer 1 p2p-node Container", container_name="trainswarm-p2p-trainer1", max_seconds=35):
         return 1
+    verify_container_mount("trainswarm-p2p-trainer1", trainer1_work)
 
     # 5. Start Trainer 2 p2p-node container (gRPC 50053, P2P 9003)
     print("[SetupDocker] [5/8] Starting Trainer 2 p2p-node container (gRPC 50053, P2P 9003)...")
-    trainer2_vol = str(trainer2_work.resolve()).replace("\\", "/")
     t2p2p_cmd = [
         "docker", "run", "-d",
         "--name", "trainswarm-p2p-trainer2",
@@ -343,7 +368,9 @@ def start_docker_cluster(force_rebuild: bool = False) -> int:
         "-p", "50053:50053",
         "-p", "9003:9003",
         "-p", "9003:9003/udp",
-        "-v", f"{trainer2_vol}:/data",
+    ]
+    t2p2p_cmd.extend(get_docker_mount_args(trainer2_work, "/data"))
+    t2p2p_cmd.extend([
         "-e", "RELAY_HOST=trainswarm-relay",
         "-e", "RELAY_PORT=4001",
         "-e", "RELAY_HTTP_PORT=8090",
@@ -352,7 +379,7 @@ def start_docker_cluster(force_rebuild: bool = False) -> int:
         "-e", "WORKING_DIR=/data",
         "-e", "IDENTITY_PATH=/data/trainer2.key",
         "trainswarm-p2p",
-    ]
+    ])
     t2p2p_run = subprocess.run(t2p2p_cmd, capture_output=True, text=True, check=False)
     if t2p2p_run.returncode != 0:
         print(f"[SetupDocker] [ERROR] Failed to start trainer2 p2p container: {t2p2p_run.stderr}", file=sys.stderr)
@@ -360,6 +387,7 @@ def start_docker_cluster(force_rebuild: bool = False) -> int:
 
     if not wait_for_tcp(50053, "Trainer 2 p2p-node Container", container_name="trainswarm-p2p-trainer2", max_seconds=35):
         return 1
+    verify_container_mount("trainswarm-p2p-trainer2", trainer2_work)
 
     creation_flags = (subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS) if sys.platform == "win32" else 0
     pids: list[int] = []

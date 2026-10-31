@@ -115,7 +115,7 @@ def stop_docker_containers() -> None:
     for name in CONTAINER_NAMES:
         try:
             res = subprocess.run(
-                ["docker", "rm", "-f", name],
+                ["docker", "rm", "-f", "-v", name],
                 capture_output=True,
                 text=True,
                 check=False,

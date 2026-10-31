@@ -170,6 +170,18 @@ func (m *Manager) openLocalFile(path string) (*os.File, error) {
 		return f, nil
 	}
 	cleanPath := filepath.ToSlash(path)
+
+	// Marker check for direct relative path inside mounted artifacts dir
+	for _, marker := range []string{"client_artifacts/", "trainer1_artifacts/", "trainer2_artifacts/", "artifacts/", "work/"} {
+		if idx := strings.Index(cleanPath, marker); idx != -1 {
+			rel := cleanPath[idx+len(marker):]
+			subPath := filepath.Join(m.workingDir, filepath.FromSlash(rel))
+			if fSub, errSub := os.Open(subPath); errSub == nil {
+				return fSub, nil
+			}
+		}
+	}
+
 	baseName := path
 	if idx := strings.LastIndex(cleanPath, "/"); idx != -1 {
 		baseName = cleanPath[idx+1:]
@@ -178,11 +190,18 @@ func (m *Manager) openLocalFile(path string) (*os.File, error) {
 	if fAlt, errAlt := os.Open(altPath); errAlt == nil {
 		return fAlt, nil
 	}
+
 	var foundPath string
+	var scannedFiles []string
 	_ = filepath.Walk(m.workingDir, func(p string, info os.FileInfo, err error) error {
-		if err == nil && !info.IsDir() && info.Name() == baseName {
-			foundPath = p
-			return filepath.SkipAll
+		if err == nil && !info.IsDir() {
+			if len(scannedFiles) < 10 {
+				scannedFiles = append(scannedFiles, info.Name())
+			}
+			if info.Name() == baseName {
+				foundPath = p
+				return filepath.SkipAll
+			}
 		}
 		return nil
 	})
@@ -191,7 +210,7 @@ func (m *Manager) openLocalFile(path string) (*os.File, error) {
 			return fFound, nil
 		}
 	}
-	return nil, fmt.Errorf("failed to open file %s (searched workingDir %s): file not found", path, m.workingDir)
+	return nil, fmt.Errorf("failed to open file %s (searched workingDir %s, found %d entries: %v): file not found", path, m.workingDir, len(scannedFiles), scannedFiles)
 }
 
 func (m *Manager) handleIncomingStream(s network.Stream) {

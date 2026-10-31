@@ -14,7 +14,6 @@ COPY --from=builder /p2pd /usr/local/bin/p2pd
 ENV WORKING_DIR=/data
 RUN mkdir -p /data
 WORKDIR /data
-VOLUME ["/data"]
 
 # Expose standard go-libp2p ports and gRPC port
 EXPOSE 9000/tcp
