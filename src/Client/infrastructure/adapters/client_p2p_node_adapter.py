@@ -200,7 +200,7 @@ class ClientP2PNodeAdapter(IClientP2PNodeAdapter):
                 self._response_queue.put(ClientActionResponse(
                     request_id=req.request_id,
                     success=True,
-                    file_path=file_path,
+                    file_path=Path(file_path).as_posix(),
                 ))
 
             elif req.action_type == ClientActionType.ACTION_TRANSFER_SHARD:
@@ -216,7 +216,7 @@ class ClientP2PNodeAdapter(IClientP2PNodeAdapter):
                 self._response_queue.put(ClientActionResponse(
                     request_id=req.request_id,
                     success=True,
-                    file_path=file_path,
+                    file_path=Path(file_path).as_posix(),
                 ))
 
             elif req.action_type == ClientActionType.ACTION_UPDATE_MODEL:

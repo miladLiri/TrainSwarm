@@ -244,7 +244,7 @@ class TrainerP2PNodeAdapter(ITrainerP2PNodeAdapter):
             req = SendUpdateRequest(
                 client_peer_id=client_node_id,
                 training_result_json=result_json,
-                update_artifact_path=str(update_artifact_path),
+                update_artifact_path=Path(update_artifact_path).as_posix(),
             )
             resp = stub.SendUpdate(req, timeout=self.timeout)
             if not resp.success:

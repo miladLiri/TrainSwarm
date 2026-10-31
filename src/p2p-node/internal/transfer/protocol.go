@@ -169,7 +169,8 @@ func (m *Manager) openLocalFile(path string) (*os.File, error) {
 	if f, err := os.Open(path); err == nil {
 		return f, nil
 	}
-	cleanPath := filepath.ToSlash(path)
+	// Always normalize backslashes unconditionally (filepath.ToSlash is a no-op on Linux)
+	cleanPath := strings.ReplaceAll(path, "\\", "/")
 
 	// Marker check for direct relative path inside mounted artifacts dir
 	for _, marker := range []string{"client_artifacts/", "trainer1_artifacts/", "trainer2_artifacts/", "artifacts/", "work/"} {
@@ -182,7 +183,7 @@ func (m *Manager) openLocalFile(path string) (*os.File, error) {
 		}
 	}
 
-	baseName := path
+	baseName := cleanPath
 	if idx := strings.LastIndex(cleanPath, "/"); idx != -1 {
 		baseName = cleanPath[idx+1:]
 	}
@@ -206,11 +207,13 @@ func (m *Manager) openLocalFile(path string) (*os.File, error) {
 		return nil
 	})
 	if foundPath != "" {
-		if fFound, errFound := os.Open(foundPath); errFound == nil {
+		fFound, errFound := os.Open(foundPath)
+		if errFound == nil {
 			return fFound, nil
 		}
+		return nil, fmt.Errorf("found matching file at %s but failed to open: %w", foundPath, errFound)
 	}
-	return nil, fmt.Errorf("failed to open file %s (searched workingDir %s, found %d entries: %v): file not found", path, m.workingDir, len(scannedFiles), scannedFiles)
+	return nil, fmt.Errorf("failed to open file %s (searched workingDir %s, target baseName: %s, found %d entries: %v): file not found", path, m.workingDir, baseName, len(scannedFiles), scannedFiles)
 }
 
 func (m *Manager) handleIncomingStream(s network.Stream) {
