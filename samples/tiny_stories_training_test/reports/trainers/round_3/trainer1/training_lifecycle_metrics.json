@@ -1,0 +1,91 @@
+{
+  "task_metadata": {
+    "client_node_id": "12D3KooWNzNpniHrZrDx2sqjTALA2UcHRvmwEH93vEAN3ZK4XH2B",
+    "model_id": "d07a9bb6-49c4-4be5-ba41-13b8cc516f7d",
+    "model_version": "2",
+    "data_set_id": "35a5c0fa-1885-4a62-b494-49d73a01036c",
+    "shard_id": "shard_1",
+    "status": "COMPLETED",
+    "total_elapsed_sec": 701.9393,
+    "start_time": "2026-11-01T07:24:08Z",
+    "end_time": "2026-11-01T07:35:49Z",
+    "error": null
+  },
+  "steps": [
+    {
+      "step_number": 1,
+      "name": "Request training task specification over P2P",
+      "status": "COMPLETED",
+      "start_time": "2026-11-01T07:24:08Z",
+      "end_time": "2026-11-01T07:24:08Z",
+      "duration_sec": 0.2557,
+      "details": {
+        "training_task_id": "6477543b-a71e-47e1-9633-697042227889"
+      },
+      "error": null
+    },
+    {
+      "step_number": 2,
+      "name": "Check local cache / stream base model over P2P",
+      "status": "COMPLETED",
+      "start_time": "2026-11-01T07:24:08Z",
+      "end_time": "2026-11-01T07:24:09Z",
+      "duration_sec": 1.195,
+      "details": {
+        "model_name": "d07a9bb6-49c4-4be5-ba41-13b8cc516f7d_2.gz",
+        "cached": false,
+        "size_bytes": 28298747
+      },
+      "error": null
+    },
+    {
+      "step_number": 3,
+      "name": "Stream dataset shard over P2P",
+      "status": "COMPLETED",
+      "start_time": "2026-11-01T07:24:09Z",
+      "end_time": "2026-11-01T07:24:10Z",
+      "duration_sec": 0.6935,
+      "details": {
+        "shard_name": "35a5c0fa-1885-4a62-b494-49d73a01036c_shard_1.pt",
+        "size_bytes": 17282542
+      },
+      "error": null
+    },
+    {
+      "step_number": 4,
+      "name": "Execute local training via PyTorch engine",
+      "status": "COMPLETED",
+      "start_time": "2026-11-01T07:24:10Z",
+      "end_time": "2026-11-01T07:35:46Z",
+      "duration_sec": 696.2966,
+      "details": {
+        "samples_trained": 2500,
+        "final_loss": 3.9090675658817533
+      },
+      "error": null
+    },
+    {
+      "step_number": 5,
+      "name": "Transmit weight delta to Client over P2P",
+      "status": "COMPLETED",
+      "start_time": "2026-11-01T07:35:46Z",
+      "end_time": "2026-11-01T07:35:49Z",
+      "duration_sec": 3.4856,
+      "details": {
+        "delta_artifact": "d07a9bb6-49c4-4be5-ba41-13b8cc516f7d_2_35a5c0fa-1885-4a62-b494-49d73a01036c_shard_1.safetensors",
+        "size_bytes": 14994680
+      },
+      "error": null
+    },
+    {
+      "step_number": 6,
+      "name": "Clean up ephemeral artifacts",
+      "status": "COMPLETED",
+      "start_time": "2026-11-01T07:35:49Z",
+      "end_time": "2026-11-01T07:35:49Z",
+      "duration_sec": 0.0128,
+      "details": {},
+      "error": null
+    }
+  ]
+}

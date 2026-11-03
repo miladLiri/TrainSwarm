@@ -73,17 +73,18 @@ METRICS_FILE = OUTPUT_DIR / "training_metrics.json"
 LIFECYCLE_FILE = OUTPUT_DIR / "training_lifecycle_metrics.json"
 
 # Optimization & Batching
-BATCH_SIZE = 64                   # Batch size per step
+BATCH_SIZE = 16                   # Batch size per step
 GRAD_ACCUM_STEPS = 2              # Effective batch size = 128
 LEARNING_RATE = 1e-4              # Calibrated fine-tuning learning rate
 WEIGHT_DECAY = 0.01               # Weight decay for regularization
-MAX_SEQ_LENGTH = 128              # Matches prepare_data.py sequence length
+MAX_SEQ_LENGTH = 288              # Matches prepare_data.py sequence length
 
 # Steps & Epochs
 NUM_EPOCHS = 5                    # 5 epochs
 MAX_TRAIN_SAMPLES = 5000          # 5,000 samples (single shard)
 SEED = 42                         # Random seed for reproducibility
-WARMUP_STEPS = 50                 # Gentle linear warmup steps
+WARMUP_STEPS = 20         
+
 # ==============================================================================
 
 

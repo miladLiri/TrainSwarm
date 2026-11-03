@@ -1,0 +1,70 @@
+{
+  "model_id": "tinystories",
+  "evaluated_at": "2026-11-01T08:21:35.854012+00:00",
+  "eval_dataset_samples": 5000,
+  "versions": [
+    {
+      "version": 0,
+      "is_baseline": true,
+      "loss": 2.1001,
+      "perplexity": 8.17,
+      "top1_accuracy": 0.519,
+      "archive_path": "E:\\WorkSpace\\TrainSwarm\\samples\\tiny_stories_training_test\\artifacts\\tinystories_base.tar.gz"
+    },
+    {
+      "version": 1,
+      "is_baseline": false,
+      "loss": 1.9107,
+      "perplexity": 6.76,
+      "top1_accuracy": 0.5486,
+      "archive_path": "E:\\WorkSpace\\TrainSwarm\\samples\\tiny_stories_training_test\\work\\client_artifacts\\models\\48ec0e35-645e-4e26-bd3e-aaecd713d6d8\\v1\\48ec0e35-645e-4e26-bd3e-aaecd713d6d8_1.gz",
+      "loss_delta_percent": -9.02,
+      "perplexity_delta_percent": -17.28,
+      "accuracy_delta_percent": 5.7
+    },
+    {
+      "version": 2,
+      "is_baseline": false,
+      "loss": 1.8996,
+      "perplexity": 6.68,
+      "top1_accuracy": 0.5507,
+      "archive_path": "E:\\WorkSpace\\TrainSwarm\\samples\\tiny_stories_training_test\\work\\client_artifacts\\models\\26718b40-13fd-4389-a2c2-44a19220aa29\\v2\\26718b40-13fd-4389-a2c2-44a19220aa29_2.gz",
+      "loss_delta_percent": -9.55,
+      "perplexity_delta_percent": -18.2,
+      "accuracy_delta_percent": 6.1
+    },
+    {
+      "version": 3,
+      "is_baseline": false,
+      "loss": 1.8938,
+      "perplexity": 6.64,
+      "top1_accuracy": 0.5519,
+      "archive_path": "E:\\WorkSpace\\TrainSwarm\\samples\\tiny_stories_training_test\\work\\client_artifacts\\models\\d07a9bb6-49c4-4be5-ba41-13b8cc516f7d\\v3\\d07a9bb6-49c4-4be5-ba41-13b8cc516f7d_3.gz",
+      "loss_delta_percent": -9.82,
+      "perplexity_delta_percent": -18.67,
+      "accuracy_delta_percent": 6.35
+    },
+    {
+      "version": 4,
+      "is_baseline": false,
+      "loss": 1.8895,
+      "perplexity": 6.62,
+      "top1_accuracy": 0.5529,
+      "archive_path": "E:\\WorkSpace\\TrainSwarm\\samples\\tiny_stories_training_test\\work\\client_artifacts\\models\\a8ec0acc-0052-4071-8f66-f125af6e0f4d\\v4\\a8ec0acc-0052-4071-8f66-f125af6e0f4d_4.gz",
+      "loss_delta_percent": -10.03,
+      "perplexity_delta_percent": -19.02,
+      "accuracy_delta_percent": 6.53
+    },
+    {
+      "version": 5,
+      "is_baseline": false,
+      "loss": 1.886,
+      "perplexity": 6.59,
+      "top1_accuracy": 0.5536,
+      "archive_path": "E:\\WorkSpace\\TrainSwarm\\samples\\tiny_stories_training_test\\work\\client_artifacts\\models\\caddca54-706c-4416-a285-db46c2eeabf4\\v5\\caddca54-706c-4416-a285-db46c2eeabf4_5.gz",
+      "loss_delta_percent": -10.19,
+      "perplexity_delta_percent": -19.3,
+      "accuracy_delta_percent": 6.66
+    }
+  ]
+}

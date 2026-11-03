@@ -1,0 +1,116 @@
+{
+  "total_tasks_scheduled": 5,
+  "extracted_at": "2026-11-01T08:01:49.503784+00:00",
+  "rounds": [
+    {
+      "round": 1,
+      "model_version": 0,
+      "task_id": "tinystories_0_tinystories",
+      "registered_at": "2026-11-01T06:56:22.455288+00:00",
+      "assignments": [
+        {
+          "shard_id": 0,
+          "trainer_node_id": "trainer-node-01",
+          "assigned_at": "2026-11-01T06:56:22.455288+00:00",
+          "completed_at": "2026-11-01T07:08:08.915293+00:00"
+        },
+        {
+          "shard_id": 1,
+          "trainer_node_id": "trainer-node-02",
+          "assigned_at": "2026-11-01T06:56:22.455288+00:00",
+          "completed_at": "2026-11-01T07:08:08.915293+00:00"
+        }
+      ],
+      "scheduling_latency_seconds": 2.5,
+      "status": "COMPLETED"
+    },
+    {
+      "round": 2,
+      "model_version": 1,
+      "task_id": "tinystories_1_tinystories",
+      "registered_at": "2026-11-01T07:08:08.986416+00:00",
+      "assignments": [
+        {
+          "shard_id": 0,
+          "trainer_node_id": "trainer-node-01",
+          "assigned_at": "2026-11-01T07:08:08.986416+00:00",
+          "completed_at": "2026-11-01T07:23:51.201209+00:00"
+        },
+        {
+          "shard_id": 1,
+          "trainer_node_id": "trainer-node-02",
+          "assigned_at": "2026-11-01T07:08:08.986416+00:00",
+          "completed_at": "2026-11-01T07:23:51.201209+00:00"
+        }
+      ],
+      "scheduling_latency_seconds": 2.5,
+      "status": "COMPLETED"
+    },
+    {
+      "round": 3,
+      "model_version": 2,
+      "task_id": "tinystories_2_tinystories",
+      "registered_at": "2026-11-01T07:23:51.354193+00:00",
+      "assignments": [
+        {
+          "shard_id": 0,
+          "trainer_node_id": "trainer-node-01",
+          "assigned_at": "2026-11-01T07:23:51.354193+00:00",
+          "completed_at": "2026-11-01T07:35:50.354864+00:00"
+        },
+        {
+          "shard_id": 1,
+          "trainer_node_id": "trainer-node-02",
+          "assigned_at": "2026-11-01T07:23:51.354193+00:00",
+          "completed_at": "2026-11-01T07:35:50.354864+00:00"
+        }
+      ],
+      "scheduling_latency_seconds": 2.5,
+      "status": "COMPLETED"
+    },
+    {
+      "round": 4,
+      "model_version": 3,
+      "task_id": "tinystories_3_tinystories",
+      "registered_at": "2026-11-01T07:35:50.409271+00:00",
+      "assignments": [
+        {
+          "shard_id": 0,
+          "trainer_node_id": "trainer-node-01",
+          "assigned_at": "2026-11-01T07:35:50.409271+00:00",
+          "completed_at": "2026-11-01T07:51:41.172109+00:00"
+        },
+        {
+          "shard_id": 1,
+          "trainer_node_id": "trainer-node-02",
+          "assigned_at": "2026-11-01T07:35:50.409271+00:00",
+          "completed_at": "2026-11-01T07:51:41.172109+00:00"
+        }
+      ],
+      "scheduling_latency_seconds": 2.5,
+      "status": "COMPLETED"
+    },
+    {
+      "round": 5,
+      "model_version": 4,
+      "task_id": "tinystories_4_tinystories",
+      "registered_at": "2026-11-01T07:51:41.221572+00:00",
+      "assignments": [
+        {
+          "shard_id": 0,
+          "trainer_node_id": "trainer-node-01",
+          "assigned_at": "2026-11-01T07:51:41.221572+00:00",
+          "completed_at": "2026-11-01T08:01:49.451299+00:00"
+        },
+        {
+          "shard_id": 1,
+          "trainer_node_id": "trainer-node-02",
+          "assigned_at": "2026-11-01T07:51:41.221572+00:00",
+          "completed_at": "2026-11-01T08:01:49.451299+00:00"
+        }
+      ],
+      "scheduling_latency_seconds": 2.5,
+      "status": "COMPLETED"
+    }
+  ]
+}

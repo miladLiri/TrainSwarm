@@ -60,7 +60,7 @@ def check_service_health(url: str, name: str) -> bool:
 def poll_round_completion(
     base_version: int,
     expected_version: int,
-    timeout_seconds: int = 300,
+    timeout_seconds: int = 600,
 ) -> tuple[list[dict], dict]:
     """Polls Client database until all shards complete and the new model is aggregated."""
     print(f"[*] Polling training progress for base_v={base_version} -> new_v={expected_version} (timeout: {timeout_seconds}s)...", flush=True)
@@ -321,7 +321,7 @@ def main() -> int:
             shards, new_model_row = poll_round_completion(
                 base_version=base_version,
                 expected_version=expected_version,
-                timeout_seconds=300,
+                timeout_seconds=60000,
             )
         except TimeoutError as exc:
             print(f"[Train] [TIMEOUT] {exc}", file=sys.stderr)

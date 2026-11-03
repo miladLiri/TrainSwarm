@@ -1,0 +1,81 @@
+{
+  "total_rounds": 5,
+  "total_elapsed_seconds": 3927.05,
+  "rounds": [
+    {
+      "round": 1,
+      "base_model_version": 0,
+      "produced_model_version": 1,
+      "submitted_at": "2026-11-01T06:56:22.455288+00:00",
+      "completed_at": "2026-11-01T07:08:08.915293+00:00",
+      "elapsed_seconds": 706.46,
+      "phases": {
+        "sharding_duration_seconds": 3.0,
+        "training_duration_seconds": 600.49,
+        "aggregation_duration_seconds": 70.65
+      },
+      "shards_completed": 2,
+      "model_artifact_path": "E:\\WorkSpace\\TrainSwarm\\samples\\tiny_stories_training_test\\work\\client_artifacts\\models\\48ec0e35-645e-4e26-bd3e-aaecd713d6d8\\v1\\48ec0e35-645e-4e26-bd3e-aaecd713d6d8_1.gz"
+    },
+    {
+      "round": 2,
+      "base_model_version": 1,
+      "produced_model_version": 2,
+      "submitted_at": "2026-11-01T07:08:08.986416+00:00",
+      "completed_at": "2026-11-01T07:23:51.201209+00:00",
+      "elapsed_seconds": 942.21,
+      "phases": {
+        "sharding_duration_seconds": 3.0,
+        "training_duration_seconds": 800.88,
+        "aggregation_duration_seconds": 94.22
+      },
+      "shards_completed": 2,
+      "model_artifact_path": "E:\\WorkSpace\\TrainSwarm\\samples\\tiny_stories_training_test\\work\\client_artifacts\\models\\26718b40-13fd-4389-a2c2-44a19220aa29\\v2\\26718b40-13fd-4389-a2c2-44a19220aa29_2.gz"
+    },
+    {
+      "round": 3,
+      "base_model_version": 2,
+      "produced_model_version": 3,
+      "submitted_at": "2026-11-01T07:23:51.354193+00:00",
+      "completed_at": "2026-11-01T07:35:50.354864+00:00",
+      "elapsed_seconds": 719.0,
+      "phases": {
+        "sharding_duration_seconds": 3.0,
+        "training_duration_seconds": 611.15,
+        "aggregation_duration_seconds": 71.9
+      },
+      "shards_completed": 2,
+      "model_artifact_path": "E:\\WorkSpace\\TrainSwarm\\samples\\tiny_stories_training_test\\work\\client_artifacts\\models\\d07a9bb6-49c4-4be5-ba41-13b8cc516f7d\\v3\\d07a9bb6-49c4-4be5-ba41-13b8cc516f7d_3.gz"
+    },
+    {
+      "round": 4,
+      "base_model_version": 3,
+      "produced_model_version": 4,
+      "submitted_at": "2026-11-01T07:35:50.409271+00:00",
+      "completed_at": "2026-11-01T07:51:41.172109+00:00",
+      "elapsed_seconds": 950.76,
+      "phases": {
+        "sharding_duration_seconds": 3.0,
+        "training_duration_seconds": 808.15,
+        "aggregation_duration_seconds": 95.08
+      },
+      "shards_completed": 2,
+      "model_artifact_path": "E:\\WorkSpace\\TrainSwarm\\samples\\tiny_stories_training_test\\work\\client_artifacts\\models\\a8ec0acc-0052-4071-8f66-f125af6e0f4d\\v4\\a8ec0acc-0052-4071-8f66-f125af6e0f4d_4.gz"
+    },
+    {
+      "round": 5,
+      "base_model_version": 4,
+      "produced_model_version": 5,
+      "submitted_at": "2026-11-01T07:51:41.221572+00:00",
+      "completed_at": "2026-11-01T08:01:49.451299+00:00",
+      "elapsed_seconds": 608.23,
+      "phases": {
+        "sharding_duration_seconds": 3.0,
+        "training_duration_seconds": 517.0,
+        "aggregation_duration_seconds": 60.82
+      },
+      "shards_completed": 2,
+      "model_artifact_path": "E:\\WorkSpace\\TrainSwarm\\samples\\tiny_stories_training_test\\work\\client_artifacts\\models\\caddca54-706c-4416-a285-db46c2eeabf4\\v5\\caddca54-706c-4416-a285-db46c2eeabf4_5.gz"
+    }
+  ]
+}
